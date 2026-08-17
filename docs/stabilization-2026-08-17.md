@@ -56,3 +56,55 @@ stop for an owner-approved imported signing-key/rotation design.
 - [ ] physical printer and two-tablet proofs recorded honestly as passed or hardware-blocked
 - [ ] fresh store renders setup state rather than crashing
 - [ ] debug and release merged manifests contain the required network permissions
+
+## RESULT — 2026-08-17, session 2 (device-proven)
+
+Pins bumped to `ea872ac` in lockstep with the KDS (`6c82491` here, `cb10f4d` there).
+
+- [x] baseline `flutter analyze` and all POS tests — clean, 42/42 at the start, **70/70** at the end
+- [x] collection secret persists across fresh vault/controller instances — `CollectionSecretOwner`,
+      witness in the store, `test/kiosk_collection_secret_test.dart`
+- [x] pre-restart collection code verifies after restart
+- [x] confirm queues one authenticated slip; order failure queues none
+- [x] exhausted printer failure is visible and retryable — and never reported as printed
+- [x] French real-width/byte regressions stay green
+- [x] Android debug build succeeds; release APK builds and carries the network permissions
+      (verified with `aapt2 dump permissions`, not inferred from the source manifest)
+- [x] Samsung install/launch/confirm/relaunch log smoke is clean — no FATAL, no E/flutter, no ANR
+- [ ] physical printer proofs — **hardware-blocked**, no printer on this network
+- [x] fresh store renders the setup state rather than crashing — proven on the device
+- [x] debug and release merged manifests contain the required network permissions
+
+Commits here: `a21a703` (confirm → slip → queue, bootstrap, manifests), `933400d` (the app's card
+design + four device-found layout defects), `6c82491` (pin).
+
+### What the device found that the host could not
+
+The Samsung is **868 × 411 dp** in landscape — read from `dumpsys display`'s `mOverrideDisplayInfo`
+plus `wm density` (420), never from `wm size` alone. At that height:
+
+1. dish cards computed 370 dp tall in a 259 dp viewport and their **price row was clipped off**;
+2. dish names truncated after ~7 characters at 28 pt;
+3. the counter screen overflowed by **336 px** — total and *Nouvelle commande* off screen;
+4. the attract screen overflowed by **91 px**.
+
+All four are now covered at real device sizes in `test/kiosk_menu_layout_test.dart` and
+`test/kiosk_confirm_print_test.dart`.
+
+⚠ `flutter_test` substitutes a fixed-width font (every glyph advances a full em), so text widths and
+wrapping in a widget test are **not** the device's. Assert geometry in tests; assert legibility on a
+device.
+
+### How to reproduce the device smoke
+
+```
+flutter build apk --debug \
+  --dart-define=KIOSK_DEV_BRANCH_ID=<branch uuid> \
+  --dart-define=KIOSK_DEV_DEVICE_ID=<device id> \
+  --dart-define=KIOSK_DEV_SEED_MENU=true
+~/Library/Android/sdk/platform-tools/adb -s <serial> install -r build/app/outputs/flutter-apk/app-debug.apk
+```
+
+`KioskDevProvisioning` is debug-only and seeds nothing without those defines; a seeded build wears a
+permanent red ribbon. Add `--dart-define=KIOSK_PRINTER_HOST=<ip>` to exercise a real printer. Keep the
+screen awake (`adb shell svc power stayon true`) — Samsung screen-sleep silently eats `input tap`.
