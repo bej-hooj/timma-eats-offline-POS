@@ -32,22 +32,22 @@ dependencies:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_core
-      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
   pos_link:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link
-      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
   pos_link_flutter:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link_flutter
-      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
   pos_cloud:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_cloud
-      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
 
   # The native SQLite pos_core opens. Its own pubspec says this belongs in "the
   # two APPS' pubspecs" — this is one of the two.
