@@ -98,6 +98,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get kioskTakeAway => 'À emporter';
 
   @override
+  String get kioskSlipHeader => 'TIMMA EATS';
+
+  @override
+  String get kioskSetupTitle => 'Borne non configurée';
+
+  @override
+  String get kioskSetupBody =>
+      'Cette tablette n\'est pas encore rattachée à un restaurant. Contactez le responsable pour la configurer.';
+
+  @override
+  String get kioskSecretLostTitle => 'Configuration à restaurer';
+
+  @override
+  String get kioskSecretLostBody =>
+      'La clé de sécurité des tickets de cette borne est introuvable. Les tickets déjà imprimés ne peuvent plus être vérifiés. Contactez le responsable avant de reprendre les commandes.';
+
+  @override
+  String get kioskPrintPrinting => 'Impression du ticket…';
+
+  @override
+  String get kioskPrintFailed =>
+      'Ticket non imprimé. Présentez ce numéro à la caisse.';
+
+  @override
+  String get kioskPrintRetry => 'Réimprimer';
+
+  @override
   String get shiftCloseTitle => 'Clôture de service';
 
   @override

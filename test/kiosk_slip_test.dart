@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
-import 'package:timma_kiosk/kiosk/printing/collection_code.dart';
+import 'package:pos_link/pos_link.dart';
 import 'package:timma_kiosk/kiosk/printing/escpos.dart';
 import 'package:timma_kiosk/kiosk/printing/print_queue.dart';
 import 'package:timma_kiosk/kiosk/printing/slip.dart';
@@ -15,7 +15,12 @@ import 'package:timma_kiosk/kiosk/printing/slip.dart';
 /// would not catch: a slip that prints beautifully with a QR the KDS cannot
 /// verify offline is a slip that fails only during an outage.
 void main() {
-  final List<int> secret = utf8.encode('shift-secret-abc');
+  // The branch secret is `pos_link`'s typed 32-byte value, shared with the KDS
+  // that verifies these codes. The kiosk deliberately holds no second copy of
+  // this logic: one file, one wire format.
+  final BranchCollectionSecret secret = BranchCollectionSecret.fromBytes(
+    List<int>.generate(32, (int index) => index * 7 % 256),
+  );
 
   PosOrder order({
     String clientId = 'c-1',
@@ -52,7 +57,8 @@ void main() {
       expect(
         scanned.verifies(secret: secret, branchId: 'b-1'),
         isTrue,
-        reason: 'the KDS must verify from its own store — a QR needing a round '
+        reason:
+            'the KDS must verify from its own store — a QR needing a round '
             'trip breaks collection in exactly the outage it was printed for',
       );
     });
@@ -87,9 +93,21 @@ void main() {
     test('a code minted under a different secret is refused', () {
       final CollectionCode code = CollectionCode.forOrder(
         order(),
-        secret: utf8.encode('some-other-secret'),
+        secret: BranchCollectionSecret.fromBytes(List<int>.filled(32, 9)),
       );
       expect(code.verifies(secret: secret, branchId: 'b-1'), isFalse);
+    });
+
+    test('an order with no ticket number cannot mint a code at all', () {
+      // The kiosk's own earlier copy of this class turned a null ticket into
+      // `0` and signed it, so a slip could carry a perfectly valid MAC over a
+      // ticket number no customer was ever given. The shared implementation
+      // refuses instead, and `confirm()` reports the slip as not printed.
+      expect(
+        () =>
+            CollectionCode.forOrder(order(ticketNumber: null), secret: secret),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('garbage from a scanner is null, never an exception', () {
@@ -145,13 +163,11 @@ void main() {
       expect(
         bytes.take(2),
         EscPos.initialize,
-        reason: 'the previous job may have died mid-format and left the '
+        reason:
+            'the previous job may have died mid-format and left the '
             'printer bold or upside down',
       );
-      expect(
-        bytes.sublist(bytes.length - EscPos.cut.length),
-        EscPos.cut,
-      );
+      expect(bytes.sublist(bytes.length - EscPos.cut.length), EscPos.cut);
     });
 
     test('the ticket number is printed at the largest size', () {
@@ -160,7 +176,8 @@ void main() {
       expect(
         _contains(bytes, large),
         isTrue,
-        reason: 'a slip whose number is the size of its line items gets read '
+        reason:
+            'a slip whose number is the size of its line items gets read '
             'wrong across a counter',
       );
     });
@@ -177,10 +194,7 @@ void main() {
     test('French accents survive the code page', () {
       final Uint8List bytes = build();
       // "espèces" and "À emporter" must not print as "esp?ces".
-      expect(
-        _contains(bytes, EscPos.text('espèces')),
-        isTrue,
-      );
+      expect(_contains(bytes, EscPos.text('espèces')), isTrue);
       expect(EscPos.text('è'), <int>[0x8A]);
       expect(EscPos.text('à'), <int>[0x85]);
       expect(EscPos.text('ç'), <int>[0x87]);
@@ -212,7 +226,8 @@ void main() {
       expect(
         _contains(bytes, EscPos.text('3 500 FCFA')),
         isTrue,
-        reason: 'a slip that clips its own price is worse than one with a '
+        reason:
+            'a slip that clips its own price is worse than one with a '
             'shortened dish name',
       );
     });
@@ -240,23 +255,26 @@ void main() {
       expect(queue.failed, isEmpty);
     });
 
-    test('an exhausted job stays VISIBLE as failed, never silently dropped',
-        () async {
-      final _FakePrinter printer = _FakePrinter(failTimes: 99);
-      final PrintQueue queue = PrintQueue(
-        transport: printer,
-        retryDelay: Duration.zero,
-      );
-      await queue.enqueue('j1', job('slip'));
-      expect(queue.failed, hasLength(1));
-      expect(
-        queue.failed.single.state,
-        PrintJobState.failed,
-        reason: 'a customer with no ticket has no way to collect and no proof '
-            'they paid — the failure must be one a human dismisses',
-      );
-      expect(queue.pendingCount, 0);
-    });
+    test(
+      'an exhausted job stays VISIBLE as failed, never silently dropped',
+      () async {
+        final _FakePrinter printer = _FakePrinter(failTimes: 99);
+        final PrintQueue queue = PrintQueue(
+          transport: printer,
+          retryDelay: Duration.zero,
+        );
+        await queue.enqueue('j1', job('slip'));
+        expect(queue.failed, hasLength(1));
+        expect(
+          queue.failed.single.state,
+          PrintJobState.failed,
+          reason:
+              'a customer with no ticket has no way to collect and no proof '
+              'they paid — the failure must be one a human dismisses',
+        );
+        expect(queue.pendingCount, 0);
+      },
+    );
 
     test('paper-out is caught BEFORE the job, not after', () async {
       final _FakePrinter printer = _FakePrinter(statusByte: 0x60);
@@ -269,7 +287,8 @@ void main() {
       expect(
         printer.sent,
         isEmpty,
-        reason: 'a slip that fails halfway has already taken the customer\'s '
+        reason:
+            'a slip that fails halfway has already taken the customer\'s '
             'place in the queue',
       );
       expect(queue.failed.single.lastError, 'paper_out');
@@ -306,7 +325,8 @@ void main() {
       expect(
         utf8.decode(printer.sent.last),
         'second',
-        reason: 'a reprint must not become what the NEXT reprint copies, or '
+        reason:
+            'a reprint must not become what the NEXT reprint copies, or '
             '"print that again" walks one job further back each time',
       );
     });

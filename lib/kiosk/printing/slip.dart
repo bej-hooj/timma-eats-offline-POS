@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:pos_core/pos_core.dart';
+import 'package:pos_link/pos_link.dart';
 
 import 'package:timma_kiosk/design/money_formatter.dart';
-import 'collection_code.dart';
 import 'escpos.dart';
 
 /// The printed slip.

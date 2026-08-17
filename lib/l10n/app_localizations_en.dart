@@ -97,6 +97,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kioskTakeAway => 'Take away';
 
   @override
+  String get kioskSlipHeader => 'TIMMA EATS';
+
+  @override
+  String get kioskSetupTitle => 'Kiosk not set up';
+
+  @override
+  String get kioskSetupBody =>
+      'This tablet is not attached to a restaurant yet. Ask the manager to set it up.';
+
+  @override
+  String get kioskSecretLostTitle => 'Setup needs restoring';
+
+  @override
+  String get kioskSecretLostBody =>
+      'This kiosk\'s slip security key is missing. Slips already printed can no longer be verified. Ask the manager before taking more orders.';
+
+  @override
+  String get kioskPrintPrinting => 'Printing your slip…';
+
+  @override
+  String get kioskPrintFailed =>
+      'Slip not printed. Show this number at the counter.';
+
+  @override
+  String get kioskPrintRetry => 'Print again';
+
+  @override
   String get shiftCloseTitle => 'Shift close';
 
   @override

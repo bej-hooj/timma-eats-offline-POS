@@ -260,6 +260,54 @@ abstract class AppLocalizations {
   /// **'À emporter'**
   String get kioskTakeAway;
 
+  /// No description provided for @kioskSlipHeader.
+  ///
+  /// In fr, this message translates to:
+  /// **'TIMMA EATS'**
+  String get kioskSlipHeader;
+
+  /// No description provided for @kioskSetupTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Borne non configurée'**
+  String get kioskSetupTitle;
+
+  /// No description provided for @kioskSetupBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette tablette n\'est pas encore rattachée à un restaurant. Contactez le responsable pour la configurer.'**
+  String get kioskSetupBody;
+
+  /// No description provided for @kioskSecretLostTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration à restaurer'**
+  String get kioskSecretLostTitle;
+
+  /// No description provided for @kioskSecretLostBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'La clé de sécurité des tickets de cette borne est introuvable. Les tickets déjà imprimés ne peuvent plus être vérifiés. Contactez le responsable avant de reprendre les commandes.'**
+  String get kioskSecretLostBody;
+
+  /// No description provided for @kioskPrintPrinting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impression du ticket…'**
+  String get kioskPrintPrinting;
+
+  /// No description provided for @kioskPrintFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ticket non imprimé. Présentez ce numéro à la caisse.'**
+  String get kioskPrintFailed;
+
+  /// No description provided for @kioskPrintRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réimprimer'**
+  String get kioskPrintRetry;
+
   /// No description provided for @shiftCloseTitle.
   ///
   /// In fr, this message translates to:

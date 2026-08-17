@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
+import 'package:pos_link/pos_link.dart';
 
+import '../printing/print_queue.dart';
+import '../printing/slip.dart';
 import 'kiosk_cart.dart';
 
 /// Where the customer is in the four-taps path.
@@ -26,11 +30,34 @@ enum KioskStage {
   outOfService,
 }
 
+/// What happened to this sale's slip.
+///
+/// It is deliberately separate from [KioskStage]: the sale is already durable
+/// and the customer already has a number on screen, so printing is a **second,
+/// weaker** outcome that must be reported truthfully without ever putting the
+/// order itself in doubt.
+enum KioskPrintState {
+  /// Nothing has been queued — no sale yet, or a sale that predates printing.
+  none,
+
+  /// Queued and being sent. The customer sees "your slip is printing".
+  printing,
+
+  /// The printer acknowledged the bytes.
+  printed,
+
+  /// Every attempt failed, or no printer is provisioned. The job stays in the
+  /// queue's `failed` list until a human deals with it, and the screen says so
+  /// rather than implying a slip exists.
+  failed,
+}
+
 class KioskSessionState {
   const KioskSessionState({
     required this.stage,
     this.placed,
     this.error,
+    this.printState = KioskPrintState.none,
   });
 
   final KioskStage stage;
@@ -42,6 +69,9 @@ class KioskSessionState {
   /// A refusal the customer needs to see — a sold-out dish caught at placement,
   /// for instance. Never a stack trace.
   final String? error;
+
+  /// The fate of this sale's slip. Never `printed` unless the transport said so.
+  final KioskPrintState printState;
 }
 
 /// Drives the kiosk's one flow and owns the idle timeout.
@@ -52,6 +82,13 @@ class KioskSessionState {
 /// unattended screen is most likely to produce.
 class KioskSessionController extends Notifier<KioskSessionState> {
   Timer? _idle;
+
+  /// True from the moment placement starts until it has committed or refused.
+  bool _placing = false;
+
+  /// The printer answers asynchronously; the screen it answers about may be
+  /// long gone.
+  bool _disposed = false;
 
   /// Long enough that a customer reading the menu is not thrown out, short
   /// enough that the next person finds a clean screen.
@@ -64,7 +101,10 @@ class KioskSessionController extends Notifier<KioskSessionState> {
 
   @override
   KioskSessionState build() {
-    ref.onDispose(() => _idle?.cancel());
+    ref.onDispose(() {
+      _disposed = true;
+      _idle?.cancel();
+    });
     final PosEngine engine = ref.read(kioskEngineProvider);
     return KioskSessionState(
       stage: engine.pinnedMenu == null
@@ -107,27 +147,143 @@ class KioskSessionController extends Notifier<KioskSessionState> {
     _arm(idleAfter);
   }
 
-  /// Places the sale through [PosEngine]. The engine prices it from the pinned
-  /// snapshot; nothing this class computed is sent.
-  void confirm() {
-    final List<PosCartLine> lines = ref.read(kioskCartProvider.notifier)
+  /// Places the sale through [PosEngine], then prints its slip.
+  ///
+  /// **Order first, slip second, and never the other way round.** The engine
+  /// prices from the pinned snapshot and commits in one transaction; nothing
+  /// this class computed is sent. Only once that sale is durable does the slip
+  /// get built and queued — so a printer that is off, out of paper or missing
+  /// entirely costs the customer a piece of paper, never their order.
+  ///
+  /// [labels] and [french] come from the shell, which has the localisations
+  /// already resolved to the language the customer chose. Printing must not
+  /// depend on whether a screen happens to be mounted, so no `BuildContext`
+  /// reaches this far.
+  Future<void> confirm({
+    required SlipLabels labels,
+    required bool french,
+  }) async {
+    // A customer pressing *Commander* twice on a laggy tablet must not buy
+    // their lunch twice. The guard covers the whole placement, and the stage
+    // check covers a stale button in a rebuilt tree.
+    if (_placing || state.stage == KioskStage.counter) {
+      return;
+    }
+    final List<PosCartLine> lines = ref
+        .read(kioskCartProvider.notifier)
         .toCartLines();
     if (lines.isEmpty) {
       return;
     }
+    _placing = true;
+    final PlacedOrder placed;
     try {
-      final PlacedOrder placed = ref
-          .read(kioskEngineProvider)
-          .placeKioskOrder(lines: lines);
-      ref.read(kioskCartProvider.notifier).clear();
-      state = KioskSessionState(stage: KioskStage.counter, placed: placed);
-      _arm(counterHold);
+      placed = ref.read(kioskEngineProvider).placeKioskOrder(lines: lines);
     } on PosError catch (error) {
       // A dish sold out between browsing and confirming is the expected case
       // here, not an exceptional one: the snapshot can be re-pinned while a
       // customer is deciding. They go back to the menu with a reason.
       state = KioskSessionState(stage: KioskStage.cart, error: error.code);
+      return;
+    } finally {
+      _placing = false;
     }
+
+    ref.read(kioskCartProvider.notifier).clear();
+    state = KioskSessionState(
+      stage: KioskStage.counter,
+      placed: placed,
+      printState: KioskPrintState.printing,
+    );
+    _arm(counterHold);
+    await _printSlip(placed, labels: labels, french: french);
+  }
+
+  /// Builds the authenticated slip and queues it exactly once.
+  ///
+  /// The collection code is an HMAC over this order's own identity under the
+  /// **persisted** branch secret, so a slip printed before a hub restart still
+  /// verifies at the kitchen afterwards. Without a secret there is nothing
+  /// honest to print — a slip carrying an unverifiable QR is worse than no
+  /// slip, because the kitchen would refuse it at the counter instead of at
+  /// the printer.
+  Future<void> _printSlip(
+    PlacedOrder placed, {
+    required SlipLabels labels,
+    required bool french,
+  }) async {
+    final PrintQueue? queue = ref.read(kioskPrintQueueProvider);
+    final BranchCollectionSecret? secret = ref.read(
+      kioskCollectionSecretProvider,
+    );
+    if (queue == null || secret == null) {
+      _reportPrint(placed, KioskPrintState.failed);
+      return;
+    }
+    try {
+      final CollectionCode code = CollectionCode.forOrder(
+        placed.order,
+        secret: secret,
+      );
+      final Uint8List bytes = Slip.build(
+        order: placed.order,
+        lines: placed.lines,
+        labels: labels,
+        code: code,
+        french: french,
+      );
+      // The order's client id IS the job id: one sale, one slip, and a reprint
+      // is a deliberate separate action rather than an accident of retrying.
+      final PrintJob job = await queue.enqueue(placed.order.clientId, bytes);
+      _reportPrint(
+        placed,
+        job.state == PrintJobState.printed
+            ? KioskPrintState.printed
+            : KioskPrintState.failed,
+      );
+    } on Object {
+      // Includes a slip that could not even be built — a missing ticket number
+      // would be one. It is still not a reason to unpick a committed sale.
+      _reportPrint(placed, KioskPrintState.failed);
+    }
+  }
+
+  /// Retries the failed slip for the sale currently on the counter screen.
+  Future<void> retryPrint() async {
+    final PlacedOrder? placed = state.placed;
+    final PrintQueue? queue = ref.read(kioskPrintQueueProvider);
+    if (placed == null || queue == null || queue.failed.isEmpty) {
+      return;
+    }
+    _reportPrint(placed, KioskPrintState.printing);
+    // The customer is standing here waiting for paper, so the clock restarts.
+    _arm(counterHold);
+    try {
+      await queue.retryFailed();
+    } on Object {
+      _reportPrint(placed, KioskPrintState.failed);
+      return;
+    }
+    _reportPrint(
+      placed,
+      queue.failed.isEmpty ? KioskPrintState.printed : KioskPrintState.failed,
+    );
+  }
+
+  /// Publishes a print outcome, but only while this sale is still the one on
+  /// screen. A queue that answers after the next customer walked up must not
+  /// relabel their session — and a disposed notifier must not be written at all.
+  void _reportPrint(PlacedOrder placed, KioskPrintState printState) {
+    if (_disposed ||
+        state.stage != KioskStage.counter ||
+        state.placed?.order.clientId != placed.order.clientId) {
+      return;
+    }
+    state = KioskSessionState(
+      stage: KioskStage.counter,
+      placed: placed,
+      printState: printState,
+    );
   }
 
   /// Back to attract with nothing left behind.
@@ -160,17 +316,14 @@ class KioskLocaleController extends Notifier<Locale> {
   @override
   Locale build() => defaultLocale;
 
-  void toggle() => state = state.languageCode == 'fr'
-      ? const Locale('en')
-      : defaultLocale;
+  void toggle() =>
+      state = state.languageCode == 'fr' ? const Locale('en') : defaultLocale;
 
   void reset() => state = defaultLocale;
 }
 
 final NotifierProvider<KioskLocaleController, Locale> kioskLocaleProvider =
-    NotifierProvider<KioskLocaleController, Locale>(
-      KioskLocaleController.new,
-    );
+    NotifierProvider<KioskLocaleController, Locale>(KioskLocaleController.new);
 
 /// Overridden at the shell with the real engine, and in tests with one built on
 /// an in-memory store. Nothing in `lib/kiosk/` constructs an engine itself.
@@ -178,4 +331,25 @@ final Provider<PosEngine> kioskEngineProvider = Provider<PosEngine>(
   (Ref ref) => throw UnimplementedError(
     'kioskEngineProvider must be overridden at the app shell',
   ),
+);
+
+/// The hub's persisted branch collection secret, or null on a tablet that has
+/// not been provisioned yet.
+///
+/// Null is a deliberate, *visible* state rather than a thrown error: a kiosk
+/// with no secret must still be able to take a sale and show a number. It
+/// simply cannot print a slip anyone could verify, and the screen says so.
+/// It is never minted here — minting on demand is what silently invalidated
+/// every slip already in a customer's hand.
+final Provider<BranchCollectionSecret?> kioskCollectionSecretProvider =
+    Provider<BranchCollectionSecret?>((Ref ref) => null);
+
+/// The kiosk's print queue, or null when no printer is provisioned.
+///
+/// Overridden at the shell with a queue over the real socket transport, and in
+/// tests with one over a fake. Defaulting to null keeps the queue out of every
+/// test that is not about printing, and keeps a kiosk selling on a branch whose
+/// printer has not arrived yet.
+final Provider<PrintQueue?> kioskPrintQueueProvider = Provider<PrintQueue?>(
+  (Ref ref) => null,
 );

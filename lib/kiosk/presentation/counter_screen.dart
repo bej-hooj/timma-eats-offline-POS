@@ -3,6 +3,7 @@ import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
+import '../state/kiosk_session.dart';
 import '../theme/kiosk_scale.dart';
 
 /// The last screen: a **large calm number** and where to take it.
@@ -19,11 +20,19 @@ class KioskCounterScreen extends StatelessWidget {
   const KioskCounterScreen({
     required this.placed,
     required this.onDone,
+    required this.printState,
+    required this.onRetryPrint,
     super.key,
   });
 
   final PlacedOrder placed;
   final VoidCallback onDone;
+
+  /// What became of this sale's slip. The order is already durable either way;
+  /// this line exists so a customer never walks to the counter believing they
+  /// are holding a ticket that was never printed.
+  final KioskPrintState printState;
+  final VoidCallback onRetryPrint;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +86,9 @@ class KioskCounterScreen extends StatelessWidget {
                   color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
                 ),
               ),
-              const SizedBox(height: KioskScale.gapXxl),
+              const SizedBox(height: KioskScale.gapLg),
+              _SlipStatus(printState: printState, onRetryPrint: onRetryPrint),
+              const SizedBox(height: KioskScale.gapXl),
               OutlinedButton(
                 onPressed: onDone,
                 style: OutlinedButton.styleFrom(
@@ -94,6 +105,69 @@ class KioskCounterScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The slip's fate, in one line the customer can act on.
+///
+/// A successful print says nothing at all: the paper is in their hand and a
+/// label confirming it would be noise. Only *printing* and *not printed* are
+/// worth screen space, and the failure carries the recovery — reprint — beside
+/// the number they can still show at the counter.
+class _SlipStatus extends StatelessWidget {
+  const _SlipStatus({required this.printState, required this.onRetryPrint});
+
+  final KioskPrintState printState;
+  final VoidCallback onRetryPrint;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final ThemeData theme = Theme.of(context);
+    final Color on = theme.colorScheme.onPrimary;
+
+    switch (printState) {
+      case KioskPrintState.none:
+      case KioskPrintState.printed:
+        return const SizedBox.shrink();
+
+      case KioskPrintState.printing:
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: on),
+            ),
+            const SizedBox(width: KioskScale.gapMd),
+            Text(
+              l10n.kioskPrintPrinting,
+              style: theme.textTheme.titleMedium?.copyWith(color: on),
+            ),
+          ],
+        );
+
+      case KioskPrintState.failed:
+        return Column(
+          children: <Widget>[
+            Text(
+              l10n.kioskPrintFailed,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(color: on),
+            ),
+            const SizedBox(height: KioskScale.gap),
+            TextButton.icon(
+              onPressed: onRetryPrint,
+              icon: Icon(Icons.print_outlined, color: on),
+              label: Text(
+                l10n.kioskPrintRetry,
+                style: theme.textTheme.titleMedium?.copyWith(color: on),
+              ),
+            ),
+          ],
+        );
+    }
   }
 }
 

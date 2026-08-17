@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/l10n/app_localizations.dart';
+import 'printing/slip.dart';
 import 'presentation/attract_screen.dart';
 import 'presentation/cart_screen.dart';
 import 'presentation/composer_sheet.dart';
@@ -143,7 +144,14 @@ class _KioskShellState extends ConsumerState<KioskShell> {
           error: session.error,
           onQuantity: ref.read(kioskCartProvider.notifier).setQuantity,
           onRemove: ref.read(kioskCartProvider.notifier).remove,
-          onConfirm: controller.confirm,
+          // The slip's strings are resolved here, where the localisations
+          // already reflect the language this customer chose, and handed to the
+          // controller as plain text. The printer is a byte sink; it must never
+          // need a mounted screen to know what to print.
+          onConfirm: () => controller.confirm(
+            labels: _slipLabels(context),
+            french: Localizations.localeOf(context).languageCode == 'fr',
+          ),
           onKeepBrowsing: controller.toMenu,
         );
 
@@ -151,10 +159,28 @@ class _KioskShellState extends ConsumerState<KioskShell> {
         return KioskCounterScreen(
           key: const ValueKey<String>('counter'),
           placed: session.placed!,
+          printState: session.printState,
+          onRetryPrint: controller.retryPrint,
           onDone: controller.reset,
         );
     }
   }
+}
+
+/// The slip's four strings, in the customer's language.
+///
+/// They live here rather than in `Slip` because the printer has no
+/// localisations delegate — and rather than in the controller because a state
+/// notifier with a `BuildContext` is a controller that can only print while a
+/// screen is mounted.
+SlipLabels _slipLabels(BuildContext context) {
+  final AppLocalizations l10n = AppLocalizations.of(context)!;
+  return SlipLabels(
+    header: l10n.kioskSlipHeader,
+    payAtCounter: l10n.kioskCounterTitle,
+    total: l10n.kioskCartTotal,
+    takeAway: l10n.kioskTakeAway,
+  );
 }
 
 class _MenuWithCartBar extends ConsumerWidget {

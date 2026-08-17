@@ -1,4 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- These belong in `main`, not only in `debug`.
+
+         The Flutter tool injects INTERNET into the debug and profile manifests
+         for its own tooling, which meant every one of these paths worked in
+         every test build and none of them would have worked in a release APK:
+         the cloud relay, the menu snapshot sync, the LAN socket to the ESC/POS
+         printer, and mDNS discovery of the hub. A kiosk that sells offline and
+         syncs later is exactly the product that would ship, pass a smoke test
+         on a debug build, and then fail silently in the restaurant.
+
+         Multicast is listed because hub discovery is mDNS/NSD: without a
+         multicast lock the KDS cannot find the kiosk on the shop's Wi-Fi. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
     <application
         android:label="timma_kiosk"
         android:name="${applicationName}"
