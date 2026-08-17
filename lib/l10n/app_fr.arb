@@ -1,0 +1,72 @@
+{
+  "kioskAttractTitle": "Commandez ici",
+  "kioskAttractSubtitle": "Touchez l'écran pour commencer",
+  "kioskAttractStart": "Commencer",
+  "kioskMenuTitle": "Notre carte",
+  "kioskSoldOut": "Épuisé",
+  "kioskAdd": "Ajouter",
+  "kioskBack": "Retour",
+  "kioskCancel": "Annuler",
+  "kioskQuantity": "Quantité",
+  "kioskRemove": "Retirer",
+  "kioskCartTitle": "Votre commande",
+  "kioskCartEmpty": "Votre commande est vide.",
+  "kioskCartTotal": "Total",
+  "kioskCartConfirm": "Commander",
+  "kioskCartKeepBrowsing": "Continuer",
+  "kioskGroupOptional": "Facultatif",
+  "kioskGroupChooseExactly": "Choisissez {count}",
+  "@kioskGroupChooseExactly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskGroupChooseUpTo": "Jusqu'à {count} au choix",
+  "@kioskGroupChooseUpTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskGroupChooseAtLeast": "Au moins {count}",
+  "@kioskGroupChooseAtLeast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskCounterTitle": "Payez à la caisse",
+  "kioskCounterSubtitle": "Présentez ce numéro",
+  "kioskCounterThanks": "Merci !",
+  "kioskCounterNewOrder": "Nouvelle commande",
+  "kioskOutOfServiceTitle": "Borne indisponible",
+  "kioskOutOfServiceBody": "Merci de commander directement à la caisse.",
+  "kioskUnavailableNow": "Un plat de votre commande n'est plus disponible. Merci de le retirer.",
+  "kioskTakeAway": "À emporter",
+  "shiftCloseTitle": "Clôture de service",
+  "shiftCloseTickets": "Tickets",
+  "shiftCloseAcknowledged": "Confirmés par le cloud",
+  "shiftCloseUnsent": "Pas encore envoyés",
+  "shiftCloseCash": "Espèces (à compter en caisse)",
+  "shiftCloseMomo": "Mobile money au comptoir",
+  "shiftCloseUntendered": "Payés, moyen non enregistré",
+  "shiftCloseStranded": "Tickets bloqués",
+  "shiftCloseSettled": "Tout est synchronisé.",
+  "shiftCloseForceDrain": "Forcer la synchronisation",
+  "shiftCloseTicketLine": "Ticket {number} · {reason}",
+  "@shiftCloseTicketLine": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftCloseNoTicketNumber": "sans numéro"
+}

@@ -1,0 +1,72 @@
+{
+  "kioskAttractTitle": "Order here",
+  "kioskAttractSubtitle": "Touch the screen to start",
+  "kioskAttractStart": "Start",
+  "kioskMenuTitle": "Our menu",
+  "kioskSoldOut": "Sold out",
+  "kioskAdd": "Add",
+  "kioskBack": "Back",
+  "kioskCancel": "Cancel",
+  "kioskQuantity": "Quantity",
+  "kioskRemove": "Remove",
+  "kioskCartTitle": "Your order",
+  "kioskCartEmpty": "Your order is empty.",
+  "kioskCartTotal": "Total",
+  "kioskCartConfirm": "Place order",
+  "kioskCartKeepBrowsing": "Keep browsing",
+  "kioskGroupOptional": "Optional",
+  "kioskGroupChooseExactly": "Choose {count}",
+  "@kioskGroupChooseExactly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskGroupChooseUpTo": "Choose up to {count}",
+  "@kioskGroupChooseUpTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskGroupChooseAtLeast": "Choose at least {count}",
+  "@kioskGroupChooseAtLeast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskCounterTitle": "Pay at the counter",
+  "kioskCounterSubtitle": "Show this number",
+  "kioskCounterThanks": "Thank you!",
+  "kioskCounterNewOrder": "New order",
+  "kioskOutOfServiceTitle": "Kiosk unavailable",
+  "kioskOutOfServiceBody": "Please order at the counter.",
+  "kioskUnavailableNow": "A dish in your order is no longer available. Please remove it.",
+  "kioskTakeAway": "Take away",
+  "shiftCloseTitle": "Shift close",
+  "shiftCloseTickets": "Tickets",
+  "shiftCloseAcknowledged": "Confirmed by the cloud",
+  "shiftCloseUnsent": "Not sent yet",
+  "shiftCloseCash": "Cash (count against the drawer)",
+  "shiftCloseMomo": "Mobile money at the counter",
+  "shiftCloseUntendered": "Paid, method not recorded",
+  "shiftCloseStranded": "Stuck tickets",
+  "shiftCloseSettled": "Everything is synced.",
+  "shiftCloseForceDrain": "Force sync",
+  "shiftCloseTicketLine": "Ticket {number} · {reason}",
+  "@shiftCloseTicketLine": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftCloseNoTicketNumber": "no number"
+}

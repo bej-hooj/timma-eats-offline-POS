@@ -1,0 +1,63 @@
+name: timma_kiosk
+description: >-
+  The TIMMA self-order kiosk. A customer-facing tablet at the door that is ALSO the store hub: it holds the shift's truth in SQLite and is the only device that talks to Supabase (ECOSYSTEM §23).
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  flutter_riverpod: ^3.3.2
+  path_provider: ^2.1.5
+  # Named because this repo's own code imports them directly.
+  crypto: ^3.0.7
+  timezone: ^0.10.0
+
+  # The offline engine and the transports, PINNED to a commit.
+  #
+  # They live in timmaeat-app-flutter — the schema owner — deliberately: pos_cloud
+  # calls the kiosk RPCs, and an engine one git hop from the migrations it is
+  # written against is how the two drift. One engine, two apps, no fork.
+  #
+  # Pinned rather than tracking main so a rebuild months from now produces the
+  # same binary (CLAUDE.md §11.8). Bumping is a deliberate edit here, and the
+  # POS and KDS repos should be bumped together — they speak the same wire.
+  pos_core:
+    git:
+      url: https://github.com/bej-hooj/timmaeat-app-flutter.git
+      path: packages/pos_core
+      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+  pos_link:
+    git:
+      url: https://github.com/bej-hooj/timmaeat-app-flutter.git
+      path: packages/pos_link
+      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+  pos_link_flutter:
+    git:
+      url: https://github.com/bej-hooj/timmaeat-app-flutter.git
+      path: packages/pos_link_flutter
+      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+  pos_cloud:
+    git:
+      url: https://github.com/bej-hooj/timmaeat-app-flutter.git
+      path: packages/pos_cloud
+      ref: ac5eabffd7784e78cb080696d5d231ea49ce90de
+
+  # The native SQLite pos_core opens. Its own pubspec says this belongs in "the
+  # two APPS' pubspecs" — this is one of the two.
+  sqlite3_flutter_libs: ^0.5.24
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
