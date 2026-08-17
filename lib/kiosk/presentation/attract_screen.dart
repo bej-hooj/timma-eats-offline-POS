@@ -64,40 +64,65 @@ class _KioskAttractScreenState extends State<KioskAttractScreen>
         onTap: widget.onStart,
         child: ColoredBox(
           color: theme.colorScheme.primary,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                TimmaMark(size: 160, color: theme.colorScheme.onPrimary),
-                const SizedBox(height: KioskScale.gapXxl),
-                Text(
-                  l10n.kioskAttractTitle,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.displayLarge?.copyWith(
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
-                const SizedBox(height: KioskScale.gapMd),
-                Text(
-                  l10n.kioskTakeAway,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: theme.colorScheme.onPrimary.withValues(alpha: 0.75),
-                  ),
-                ),
-                const SizedBox(height: KioskScale.gapXxl),
-                FadeTransition(
-                  opacity: Tween<double>(begin: 0.45, end: 1).animate(
-                    CurvedAnimation(parent: _breath, curve: Curves.easeInOut),
-                  ),
-                  child: Text(
-                    l10n.kioskAttractSubtitle,
-                    style: theme.textTheme.headlineLarge?.copyWith(
+          // ⚠ Sized off the height it has, not off constants. At 411 dp — the
+          // Samsung in landscape — the fixed 160 dp mark plus two `gapXxl`
+          // spacers overflowed this column by 91 px, on the one screen a
+          // customer sees before they have touched anything. The mark and the
+          // gaps give way; the invitation to touch never does.
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double height = constraints.maxHeight.isFinite
+                  ? constraints.maxHeight
+                  : 800;
+              final double markSize = (height * 0.22).clamp(72.0, 160.0);
+              final double breather = (height * 0.08).clamp(
+                KioskScale.gapMd,
+                KioskScale.gapXxl,
+              );
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    TimmaMark(
+                      size: markSize,
                       color: theme.colorScheme.onPrimary,
                     ),
-                  ),
+                    SizedBox(height: breather),
+                    Text(
+                      l10n.kioskAttractTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.displayLarge?.copyWith(
+                        color: theme.colorScheme.onPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: KioskScale.gap),
+                    Text(
+                      l10n.kioskTakeAway,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: theme.colorScheme.onPrimary.withValues(
+                          alpha: 0.75,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: breather),
+                    FadeTransition(
+                      opacity: Tween<double>(begin: 0.45, end: 1).animate(
+                        CurvedAnimation(
+                          parent: _breath,
+                          curve: Curves.easeInOut,
+                        ),
+                      ),
+                      child: Text(
+                        l10n.kioskAttractSubtitle,
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

@@ -3,7 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:timma_kiosk/design/app_tokens.dart';
 import '../../theme/kiosk_scale.dart';
 
-/// One dish, photograph first.
+/// One dish, photograph first — **the customer app's card, at kiosk scale.**
+///
+/// The grammar is copied deliberately from
+/// `lib/features/catalog/presentation/widgets/product_card.dart` in the app, so
+/// a dish looks like the same product whether the customer met it on their phone
+/// or on the kiosk (owner, 2026-08-17). Three rules travel with it, and each one
+/// is there because the app learned it the hard way:
+///
+/// * **The photo is exactly half the card**, as two equal `Expanded`s rather
+///   than a number anyone picked. A fixed photo height drifted the app's two
+///   copies apart and overflowed one text variant by 7 px.
+/// * **The photo is full bleed and carries no radius of its own.** The `Card`'s
+///   `Clip.antiAlias` rounds its top corners to exactly the card's, which a
+///   separately rounded, inset image can only approximate.
+/// * **Title, then a spacer, then the price row.** The price sits on the
+///   card's bottom edge on every card, so a row of dishes has one price line
+///   rather than a ragged one.
 ///
 /// A null [onTap] is the sold-out state: the card renders greyed with its badge
 /// and **cannot be tapped**, so a sold-out dish has no path to the composer at
@@ -44,31 +60,48 @@ class KioskDishCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  SizedBox(
-                    height: KioskScale.dishCardImageHeight,
-                    child: _Photo(url: photoUrl, soldOut: soldOut,
-                        soldOutLabel: soldOutLabel),
+                  // Half the card, by construction. See the class doc.
+                  Expanded(
+                    child: _Photo(
+                      url: photoUrl,
+                      soldOut: soldOut,
+                      soldOutLabel: soldOutLabel,
+                    ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(KioskScale.gapMd),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: KioskScale.gap),
-                        Text(
-                          price,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: KioskScale.gapMd,
+                        vertical: KioskScale.gap,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            name,
+                            // Two lines, where the app's card allows one. Not a
+                            // drift from the app: its text half also carries a
+                            // tag chip and a 48 dp price row and genuinely has
+                            // no room, while the kiosk card's carries a name
+                            // and a price. Spending that slack on the dish's
+                            // full name is the whole point of the screen —
+                            // "Ndolé aux crevettes" must not arrive as
+                            // "Ndolé a…".
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium,
                           ),
-                        ),
-                      ],
+                          const Spacer(),
+                          Text(
+                            price,
+                            maxLines: 1,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -113,8 +146,7 @@ class _Photo extends StatelessWidget {
         : Image.network(
             url!,
             fit: BoxFit.cover,
-            errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
-                fallback,
+            errorBuilder: (BuildContext _, Object _, StackTrace? _) => fallback,
           );
     if (!soldOut) {
       return photo;

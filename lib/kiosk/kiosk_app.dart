@@ -5,6 +5,7 @@ import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import 'printing/slip.dart';
+import 'hub/dev_provisioning.dart';
 import 'presentation/attract_screen.dart';
 import 'presentation/cart_screen.dart';
 import 'presentation/composer_sheet.dart';
@@ -40,7 +41,62 @@ class KioskApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      // The sample-menu ribbon wraps the whole app rather than one screen, so it
+      // is visible on every stage of the flow including the counter screen.
+      // The app repo learned this the expensive way: a build with fake data and
+      // no visible marker cost a whole session of chasing "missing images" that
+      // were never configured. If the prices on screen are not real, the screen
+      // says so.
+      builder: (BuildContext context, Widget? child) =>
+          KioskDevProvisioning.seedMenu && child != null
+          ? _SampleMenuRibbon(child: child)
+          : (child ?? const SizedBox.shrink()),
       home: const KioskShell(),
+    );
+  }
+}
+
+/// A permanent, unmissable band across a debug build running on sample data.
+class _SampleMenuRibbon extends StatelessWidget {
+  const _SampleMenuRibbon({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: <Widget>[
+        child,
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: ColoredBox(
+              color: const Color(0xFFA32D2D),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    'DEBUG — MENU D\'EXEMPLE · PRIX NON RÉELS',
+                    textAlign: TextAlign.center,
+                    // Not localised on purpose: it is a developer marker, not
+                    // product copy, and it must never be mistaken for a string
+                    // a customer is meant to read.
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

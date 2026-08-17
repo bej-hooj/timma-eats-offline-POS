@@ -10,6 +10,7 @@ import 'package:pos_link_flutter/pos_link_flutter.dart';
 
 import 'package:timma_kiosk/design/time_util.dart';
 import 'kiosk/hub/collection_secret_owner.dart';
+import 'kiosk/hub/dev_provisioning.dart';
 import 'kiosk/kiosk_app.dart';
 import 'kiosk/printing/print_queue.dart';
 import 'kiosk/printing/socket_printer.dart';
@@ -47,11 +48,16 @@ Future<void> main() async {
   // never invent a branch or device id, because a made-up branch id would sign
   // collection codes no kitchen can verify and file sales against a restaurant
   // that does not exist.
-  final PosDeviceIdentity? identity = store.readIdentity();
+  // In debug builds with an explicit `--dart-define`ed identity this seeds the
+  // store so the kiosk can be exercised on real hardware; in release it is a
+  // plain read of what provisioning wrote. It never overwrites an identity.
+  final PosDeviceIdentity? identity = KioskDevProvisioning.seedIfAbsent(store);
   if (identity == null) {
     runApp(const KioskBootstrapApp(state: KioskBootstrapState.unprovisioned));
     return;
   }
+
+  KioskDevProvisioning.seedMenuIfAbsent(store, branchId: identity.branchId);
 
   // The branch collection secret, loaded once and reused for the life of the
   // branch. A fault here does not stop the kiosk selling — it stops it printing

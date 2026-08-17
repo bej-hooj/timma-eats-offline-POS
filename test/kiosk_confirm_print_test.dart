@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
@@ -14,6 +15,8 @@ import 'package:timma_kiosk/kiosk/printing/print_queue.dart';
 import 'package:timma_kiosk/kiosk/printing/slip.dart';
 import 'package:timma_kiosk/kiosk/state/kiosk_cart.dart';
 import 'package:timma_kiosk/kiosk/state/kiosk_session.dart';
+import 'package:timma_kiosk/kiosk/theme/kiosk_theme.dart';
+import 'package:timma_kiosk/l10n/app_localizations.dart';
 
 /// K6 wiring — **confirm places the sale, then prints its slip.**
 ///
@@ -25,6 +28,9 @@ import 'package:timma_kiosk/kiosk/state/kiosk_session.dart';
 /// by one impatient customer, or a failure reported as a success.
 ///
 /// It runs in **French**, the default locale, at a real mounted-tablet width.
+/// The logical height a device reports for these physical pixels.
+double screenHeightOf(Size physical, double ratio) => physical.height / ratio;
+
 void main() {
   late PosStore store;
   late PosEngine engine;
@@ -348,6 +354,85 @@ void main() {
       <int>[1, 2],
       reason: 'numbering continues rather than reusing a printed number',
     );
+  });
+
+  testWidgets('the counter screen fits every real tablet size, in French', (
+    tester,
+  ) async {
+    // Found on the Samsung, not in a test: at 411 dp tall this screen
+    // overflowed by 336 px and pushed the total, the slip line and *Nouvelle
+    // commande* off the bottom. The sale was placed correctly and the customer
+    // could neither see its price nor start another order. Sixth defect of this
+    // exact shape in this project, so it gets a test at real sizes, in French,
+    // in the tallest variant — the failed-print state, which carries two extra
+    // rows.
+    //
+    // ⚠ The screen is pumped DIRECTLY rather than reached by tapping through
+    // the flow. Driving the whole flow here would fail on the composer for a
+    // reason that is not a defect: `flutter_test` substitutes a fixed-width
+    // font where every glyph advances a full em, so "Ajouter  3 500 FCFA"
+    // measures 418 dp in this harness against roughly 230 on the device, and
+    // any width-sensitive row "overflows". Vertical geometry does not depend on
+    // that substitution, which is why this test asserts heights and positions
+    // and leaves the flow's widths to the device proof.
+    addTearDown(tester.view.reset);
+    final PlacedOrder placed = engine.placeKioskOrder(
+      lines: <PosCartLine>[
+        const PosCartLine(productId: 'p-poulet', quantity: 1),
+      ],
+    );
+    for (final (Size size, double ratio) in <(Size, double)>[
+      (const Size(2280, 1080), 2.625), // Samsung S10 landscape, 868x411 dp
+      (const Size(2560, 1600), 2.0), // mounted 10-inch tablet, 1280x800 dp
+      (const Size(1920, 1200), 2.0), // small 7-inch tablet, 960x600 dp
+    ]) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fr'),
+          theme: KioskTheme.build(),
+          localizationsDelegates: const <LocalizationsDelegate<Object>>[
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: KioskCounterScreen(
+              placed: placed,
+              printState: KioskPrintState.failed,
+              onRetryPrint: () {},
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull, reason: 'no overflow at $size');
+
+      // Both the way out and the print recovery are built at every size.
+      expect(find.text('Nouvelle commande'), findsOneWidget, reason: '$size');
+      expect(find.text('Réimprimer'), findsOneWidget, reason: '$size');
+
+      // ⚠ Structural, not pixel-positional. Whether a widget lands above the
+      // fold cannot be measured in this harness: the substituted fixed-width
+      // font wraps the French failure line onto three lines where the device
+      // uses two, which moves everything below it. What IS font-independent is
+      // WHICH layout the screen chose — and choosing the stacked one on a short
+      // screen is the actual defect. 411 dp must go side by side; 800 must not.
+      final bool expectSideBySide = screenHeightOf(size, ratio) < 620;
+      expect(
+        find.text('Présentez ce numéro'),
+        expectSideBySide ? findsNothing : findsOneWidget,
+        reason: expectSideBySide
+            ? 'a 411 dp screen must use the wide axis, where the number stands '
+                  'alone and its caption moves in with the other words'
+            : 'a tall screen keeps the caption above the number',
+      );
+    }
   });
 
   testWidgets('a dish sold out at the last moment prints nothing at all', (

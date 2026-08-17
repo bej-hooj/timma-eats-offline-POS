@@ -36,74 +36,210 @@ class KioskCounterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
     final int? number = placed.order.ticketNumber;
 
     return ColoredBox(
       color: theme.colorScheme.primary,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(KioskScale.gapXl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                l10n.kioskCounterThanks,
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  color: theme.colorScheme.onPrimary,
-                ),
+      // ⚠ **Everything on this screen has to fit, on whatever the kiosk is
+      // mounted on.** Measured on the Samsung: in landscape that device is
+      // 411 dp tall and this content overflowed a single column by 336 px,
+      // pushing the total, the slip line and *Nouvelle commande* clean off the
+      // bottom. The sale itself was fine — the customer simply had no way to
+      // see its price or start the next order, and a kiosk customer does not
+      // think to scroll.
+      //
+      // So on a short screen the layout uses the axis it actually has: the
+      // number takes the left half and everything else stacks on the right.
+      // Stacked vertically it cannot fit at 411 dp however the type is tuned;
+      // side by side it fits with room to spare.
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double height = constraints.maxHeight.isFinite
+              ? constraints.maxHeight
+              : 800;
+          final bool sideBySide =
+              height < _stackedNeeds && constraints.maxWidth > height;
+          final Widget ticket = _Ticket(
+            number: number,
+            size: _numberSize(height, sideBySide: sideBySide),
+            showCaption: !sideBySide,
+          );
+          final Widget details = _Details(
+            placed: placed,
+            printState: printState,
+            onRetryPrint: onRetryPrint,
+            onDone: onDone,
+            crossAxisAlignment: sideBySide
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+          );
+
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: height),
+              child: Padding(
+                padding: const EdgeInsets.all(KioskScale.gapLg),
+                child: sideBySide
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Expanded(child: Center(child: ticket)),
+                          const SizedBox(width: KioskScale.gapLg),
+                          Expanded(child: details),
+                        ],
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            ticket,
+                            const SizedBox(height: KioskScale.gapMd),
+                            details,
+                          ],
+                        ),
+                      ),
               ),
-              const SizedBox(height: KioskScale.gapLg),
-              Text(
-                l10n.kioskCounterSubtitle,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
-                ),
-              ),
-              const SizedBox(height: KioskScale.gapMd),
-              Text(
-                number == null ? '—' : '$number',
-                style: TextStyle(
-                  fontSize: KioskScale.counterNumberSize,
-                  fontWeight: FontWeight.w800,
-                  height: 1,
-                  color: theme.colorScheme.onPrimary,
-                ),
-              ),
-              const SizedBox(height: KioskScale.gapXl),
-              Text(
-                l10n.kioskCounterTitle,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.displayLarge?.copyWith(
-                  color: theme.colorScheme.onPrimary,
-                ),
-              ),
-              const SizedBox(height: KioskScale.gapMd),
-              Text(
-                MoneyFormatter.formatXaf(placed.order.total),
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
-                ),
-              ),
-              const SizedBox(height: KioskScale.gapLg),
-              _SlipStatus(printState: printState, onRetryPrint: onRetryPrint),
-              const SizedBox(height: KioskScale.gapXl),
-              OutlinedButton(
-                onPressed: onDone,
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: theme.colorScheme.onPrimary,
-                    width: 2,
-                  ),
-                  foregroundColor: theme.colorScheme.onPrimary,
-                ),
-                child: Text(l10n.kioskCounterNewOrder),
-              ),
-            ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Roughly what the stacked layout needs before it starts pushing its own
+  /// actions off the bottom. Below this the side-by-side layout takes over.
+  static const double _stackedNeeds = 620;
+
+  /// The ticket number's type size for the height this screen actually got.
+  ///
+  /// It stays the biggest thing on the screen — a customer reads it across a
+  /// room — but it is a share of the available height rather than a constant, so
+  /// it cannot push the rest of the screen off a short one.
+  static double _numberSize(
+    double availableHeight, {
+    required bool sideBySide,
+  }) {
+    if (!availableHeight.isFinite || availableHeight <= 0) {
+      return KioskScale.counterNumberSize;
+    }
+    // Side by side the number owns its half, so it can spend more of the height
+    // than when it is one item in a stack.
+    final double share = availableHeight * (sideBySide ? 0.45 : 0.28);
+    return share > KioskScale.counterNumberSize
+        ? KioskScale.counterNumberSize
+        : (share < 48 ? 48 : share);
+  }
+}
+
+/// The number a customer shows at the counter, and nothing else.
+class _Ticket extends StatelessWidget {
+  const _Ticket({
+    required this.number,
+    required this.size,
+    required this.showCaption,
+  });
+
+  final int? number;
+  final double size;
+
+  /// The stacked layout keeps "Merci !" and "Présentez ce numéro" above the
+  /// number; side by side they belong with the rest of the words, so the left
+  /// half is the number alone and reads from across the room.
+  final bool showCaption;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final ThemeData theme = Theme.of(context);
+    final Color on = theme.colorScheme.onPrimary;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (showCaption) ...<Widget>[
+          Text(
+            l10n.kioskCounterThanks,
+            style: theme.textTheme.headlineLarge?.copyWith(color: on),
+          ),
+          const SizedBox(height: KioskScale.gap),
+          Text(
+            l10n.kioskCounterSubtitle,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: on.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+        Text(
+          number == null ? '—' : '$number',
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: size,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+            color: on,
           ),
         ),
-      ),
+      ],
+    );
+  }
+}
+
+/// Where to pay, how much, what happened to the slip, and the way out.
+class _Details extends StatelessWidget {
+  const _Details({
+    required this.placed,
+    required this.printState,
+    required this.onRetryPrint,
+    required this.onDone,
+    required this.crossAxisAlignment,
+  });
+
+  final PlacedOrder placed;
+  final KioskPrintState printState;
+  final VoidCallback onRetryPrint;
+  final VoidCallback onDone;
+  final CrossAxisAlignment crossAxisAlignment;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final ThemeData theme = Theme.of(context);
+    final Color on = theme.colorScheme.onPrimary;
+    final bool stacked = crossAxisAlignment == CrossAxisAlignment.center;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: crossAxisAlignment,
+      children: <Widget>[
+        if (!stacked)
+          Text(
+            l10n.kioskCounterThanks,
+            style: theme.textTheme.titleLarge?.copyWith(color: on),
+          ),
+        Text(
+          l10n.kioskCounterTitle,
+          textAlign: stacked ? TextAlign.center : TextAlign.start,
+          style: theme.textTheme.headlineLarge?.copyWith(color: on),
+        ),
+        const SizedBox(height: KioskScale.gap),
+        Text(
+          MoneyFormatter.formatXaf(placed.order.total),
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: on.withValues(alpha: 0.85),
+          ),
+        ),
+        const SizedBox(height: KioskScale.gapMd),
+        _SlipStatus(printState: printState, onRetryPrint: onRetryPrint),
+        const SizedBox(height: KioskScale.gapMd),
+        OutlinedButton(
+          onPressed: onDone,
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: on, width: 2),
+            foregroundColor: on,
+          ),
+          child: Text(l10n.kioskCounterNewOrder),
+        ),
+      ],
     );
   }
 }

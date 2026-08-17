@@ -27,7 +27,23 @@ abstract final class AppColors {
   // "yellow-on-white everywhere" (owner-reported). Depth now comes from a
   // three-step ladder: canvas < white card < muted field / soft-green selected.
   /// Page background: warm paper so white cards separate from it.
-  static const Color canvas = Color(0xFFFAF8F2);
+  ///
+  /// Synced from the **customer app's** `AppColors.canvas`, not from
+  /// `design-tokens/tokens.json`. The two genuinely differ and the difference is
+  /// deliberate: `tokens.json` `canvas` (`#faf8f2`) is the **dashboard's** page,
+  /// while the app moved its own page to `#F5ECDE` so the warm paper is actually
+  /// visible (`#faf8f2` sits at `L*` ≈ 98, so close to white that the colour
+  /// read as nothing). The kiosk stands next to the app in a customer's mind —
+  /// same dishes, same brand — so it follows the app (owner, 2026-08-17: *"the
+  /// POS kiosk should follow the current design of the app menu view"*).
+  ///
+  /// ⚠ **The floor is card separation, not text contrast.** This measures
+  /// 1.171:1 against the white [surface] cards. Lightening it further without
+  /// re-checking the dish cards on a device is how they stop reading as cards.
+  ///
+  /// Recorded as a cross-repo divergence for `ECOSYSTEM §23`; that append is
+  /// owed once the webapp tree is clean.
+  static const Color canvas = Color(0xFFF5ECDE);
 
   /// Neutral field / unselected-tile fill (hairline-bordered).
   static const Color surfaceMuted = Color(0xFFF1EFE7);

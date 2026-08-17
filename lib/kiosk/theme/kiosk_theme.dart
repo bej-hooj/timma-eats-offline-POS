@@ -30,7 +30,10 @@ abstract final class KioskTheme {
       splashFactory: InkRipple.splashFactory,
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(KioskScale.minTarget * 3, KioskScale.minTarget),
+          minimumSize: const Size(
+            KioskScale.minTarget * 3,
+            KioskScale.minTarget,
+          ),
           padding: const EdgeInsets.symmetric(
             horizontal: KioskScale.gapXl,
             vertical: KioskScale.gapMd,
@@ -40,24 +43,23 @@ abstract final class KioskTheme {
             fontWeight: FontWeight.w600,
           ),
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(KioskScale.radius),
-            ),
+            borderRadius: BorderRadius.all(Radius.circular(KioskScale.radius)),
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(KioskScale.minTarget * 2, KioskScale.minTarget),
+          minimumSize: const Size(
+            KioskScale.minTarget * 2,
+            KioskScale.minTarget,
+          ),
           side: const BorderSide(color: AppColors.controlBorder, width: 2),
           textStyle: const TextStyle(
             fontSize: KioskScale.bodySize,
             fontWeight: FontWeight.w600,
           ),
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(KioskScale.radius),
-            ),
+            borderRadius: BorderRadius.all(Radius.circular(KioskScale.radius)),
           ),
         ),
       ),
@@ -90,6 +92,21 @@ abstract final class KioskTheme {
       fontSize: KioskScale.titleSize,
       fontWeight: FontWeight.w600,
       color: AppColors.onSurface,
+    ),
+    // **The card-title role**, mirroring the customer app, where `titleMedium`
+    // became exactly that on 2026-08-16 so no call site decides a dish name's
+    // weight or line height for itself.
+    //
+    // Sized down from [KioskScale.titleSize] deliberately. At 28 pt a dish name
+    // in a ~224 dp card truncated after about seven characters — the Samsung
+    // showed "Poulet …" and "Ndolé a…", which on the one screen whose job is
+    // naming food is worse than smaller type. 22 pt over two lines carries
+    // "Ndolé aux crevettes" whole and is still readable at standing distance.
+    titleMedium: TextStyle(
+      fontSize: KioskScale.bodySize,
+      fontWeight: FontWeight.w600,
+      color: AppColors.onSurface,
+      height: 1.2,
     ),
     bodyLarge: TextStyle(
       fontSize: KioskScale.bodySize,
