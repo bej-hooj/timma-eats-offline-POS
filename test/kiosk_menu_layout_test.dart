@@ -134,7 +134,12 @@ void main() {
       // tablet. Real-name legibility is a device proof, and was taken as one on
       // the Samsung.
       final Text name = tester.widget<Text>(find.text('Ndolé aux crevettes'));
-      expect(name.maxLines, 2);
+      // The line count is COMPUTED from the height the card actually got: one
+      // line on a short card, two when they both fit whole. What must never
+      // happen is a line drawn in a box too short to show it — the Samsung
+      // rendered "Poisson braisé" with its second line sliced through the
+      // middle before this became arithmetic instead of a constant.
+      expect(name.maxLines, inInclusiveRange(1, 2));
       expect(
         name.style?.fontSize,
         Theme.of(

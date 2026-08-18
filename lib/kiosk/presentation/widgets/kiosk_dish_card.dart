@@ -57,6 +57,7 @@ class KioskDishCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final TextStyle style = theme.textTheme.titleMedium!;
     return Semantics(
       button: onTap != null,
       enabled: onTap != null,
@@ -89,32 +90,20 @@ class KioskDishCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          // ⚠ `Flexible`, not a bare `Text`. The card shrinks
-                          // to fit the screen (see `_DishGridMetrics`), and at
-                          // the smallest size two lines of title plus the price
-                          // row overflowed the text half by 3 px — which the
-                          // category strip exposed the moment it took 72 dp off
-                          // the grid. Flexible lets the title give way and
-                          // ellipsize instead; the price never does, because a
-                          // dish with no visible price is the one thing this
-                          // card must never be.
-                          Flexible(
-                            child: Text(
-                              name,
-                              // Two lines, where the app's card allows one. Not a
-                              // drift from the app: its text half also carries a
-                              // tag chip and a 48 dp price row and genuinely has
-                              // no room, while the kiosk card's carries a name
-                              // and a price. Spending that slack on the dish's
-                              // full name is the whole point of the screen —
-                              // "Ndolé aux crevettes" must not arrive as
-                              // "Ndolé a…".
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium,
+                          // ⚠ `Expanded` + `Align`, NOT `Flexible` above a
+                          // `Spacer`. Both of those default to flex 1, so the
+                          // spacer took half the room left for the name and
+                          // every dish truncated to a single line on the
+                          // Samsung — "Poisson br…" where two whole lines
+                          // fitted. The name owns the leftover space and sits
+                          // at the top of it; the price keeps the bottom edge,
+                          // which is what lines prices up across a row.
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: _DishName(name: name, style: style),
                             ),
                           ),
-                          const Spacer(),
                           Text(
                             price,
                             maxLines: 1,
@@ -239,6 +228,38 @@ class _Photo extends StatelessWidget {
       source,
       fit: BoxFit.cover,
       errorBuilder: (BuildContext _, Object _, StackTrace? _) => fallback,
+    );
+  }
+}
+
+/// The dish's name, drawing only lines that fit whole.
+///
+/// **The line count is computed, not declared.** `maxLines: 2` with an ellipsis
+/// bounds how many lines are laid out; it does not stop a line being painted in
+/// a box too short to show it. The Samsung rendered "Poisson braisé" with its
+/// second line sliced through the middle — which reads as a rendering fault
+/// rather than a long name. So the text is told how many lines it may use for
+/// the height it actually got, and ellipsizes on the last one that fits.
+class _DishName extends StatelessWidget {
+  const _DishName({required this.name, required this.style});
+
+  final String name;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double lineHeight =
+            (style.fontSize ?? 22) * (style.height ?? 1.2);
+        final int fits = (constraints.maxHeight / lineHeight).floor();
+        return Text(
+          name,
+          maxLines: fits.clamp(1, 2),
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        );
+      },
     );
   }
 }
