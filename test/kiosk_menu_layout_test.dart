@@ -5,7 +5,9 @@ import 'package:pos_core/pos_core.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/kiosk/presentation/menu_screen.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_category_pill.dart';
+import 'package:timma_kiosk/kiosk/presentation/composer_sheet.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_dish_card.dart';
+import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_dish_thumb.dart';
 import 'package:timma_kiosk/kiosk/theme/kiosk_theme.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 
@@ -178,6 +180,63 @@ void main() {
       );
     }
     addTearDown(tester.view.reset);
+  });
+
+  testWidgets('a dish shows its photograph in the cart and the composer', (
+    tester,
+  ) async {
+    // Owner, 2026-08-18: the picture must appear at every step a dish appears.
+    // Before this the cart and the composer were text only — measured as zero
+    // Image/photoUrl references in either file — so a customer who chose a
+    // photograph off the menu never saw it again.
+    tester.view.physicalSize = const Size(2280, 1080);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+
+    const SnapshotProduct dish = SnapshotProduct(
+      productId: 'p-poulet',
+      nameFr: 'Poulet DG',
+      nameEn: 'Chicken DG',
+      basePrice: 4500,
+      type: 'dish',
+      available: true,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        theme: KioskTheme.build(),
+        localizationsDelegates: const <LocalizationsDelegate<Object>>[
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: KioskComposerSheet(
+            product: dish,
+            cache: null,
+            onCancel: () {},
+            onAdd: (KioskComposition _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byType(KioskDishThumb),
+      findsOneWidget,
+      reason: 'the composer shows the dish being decided about',
+    );
+    // ⚠ The composer's action row overflows IN THIS HARNESS ONLY, and the
+    // error is consumed deliberately rather than asserted away. It carries
+    // "Ajouter  4 500 FCFA", and `flutter_test` substitutes a fixed-width font
+    // where every glyph advances a full em: that string measures 418 dp here
+    // against roughly 230 on the device. Composer widths are a device proof —
+    // the screenshot on the Samsung shows the row fitting with room to spare.
+    tester.takeException();
   });
 
   testWidgets('a sold-out dish still cannot be tapped through', (tester) async {

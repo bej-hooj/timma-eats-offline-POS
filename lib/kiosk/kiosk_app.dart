@@ -187,6 +187,7 @@ class _KioskShellState extends ConsumerState<KioskShell> {
           return KioskComposerSheet(
             key: ValueKey<String>('composer-${composing.productId}'),
             product: composing,
+            cache: ref.watch(kioskPhotoCacheProvider),
             onCancel: () => setState(() => _composing = null),
             onAdd: (KioskComposition composition) {
               ref
@@ -214,6 +215,7 @@ class _KioskShellState extends ConsumerState<KioskShell> {
         return KioskCartScreen(
           key: const ValueKey<String>('cart'),
           cart: cart,
+          cache: ref.watch(kioskPhotoCacheProvider),
           error: session.error,
           onQuantity: ref.read(kioskCartProvider.notifier).setQuantity,
           onRemove: ref.read(kioskCartProvider.notifier).remove,

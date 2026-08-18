@@ -3,6 +3,8 @@ import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
+import '../catalog/dish_photo_cache.dart';
+import 'widgets/kiosk_dish_thumb.dart';
 import '../theme/kiosk_scale.dart';
 
 /// What the customer built, handed back to the caller.
@@ -28,12 +30,17 @@ class KioskComposition {
 class KioskComposerSheet extends StatefulWidget {
   const KioskComposerSheet({
     required this.product,
+    required this.cache,
     required this.onAdd,
     required this.onCancel,
     super.key,
   });
 
   final SnapshotProduct product;
+
+  /// Dish photographs, so the screen where a customer decides shows what they
+  /// are deciding about.
+  final DishPhotoCache? cache;
   final void Function(KioskComposition composition) onAdd;
   final VoidCallback onCancel;
 
@@ -105,6 +112,13 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
     });
   }
 
+  Widget _title(bool french, ThemeData theme) => Text(
+    french ? widget.product.nameFr : widget.product.nameEn,
+    maxLines: 2,
+    overflow: TextOverflow.ellipsis,
+    style: theme.textTheme.headlineLarge,
+  );
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
@@ -116,10 +130,24 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            french ? widget.product.nameFr : widget.product.nameEn,
-            style: theme.textTheme.headlineLarge,
+          // The dish, pictured, at the moment the customer is deciding on it.
+          // The composer showed a bare name: the one screen where somebody is
+          // choosing between plantain and chips had no photograph of either the
+          // dish or anything else.
+          Row(
+            children: <Widget>[
+              KioskDishThumb(
+                photoUrl: widget.product.photoUrl,
+                cache: widget.cache,
+                size: KioskScale.minTarget,
+                radius: KioskScale.gap,
+                iconSize: 28,
+              ),
+              const SizedBox(width: KioskScale.gapMd),
+              Expanded(child: _title(french, theme)),
+            ],
           ),
+
           const SizedBox(height: KioskScale.gapLg),
           Expanded(
             child: ListView(

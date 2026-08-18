@@ -1,10 +1,9 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 
 import 'package:timma_kiosk/design/app_tokens.dart';
 import '../../catalog/dish_photo_cache.dart';
 import '../../theme/kiosk_scale.dart';
+import 'kiosk_dish_thumb.dart';
 
 /// One dish, photograph first — **the customer app's card, at kiosk scale.**
 ///
@@ -142,31 +141,11 @@ class _Photo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    // A dish with no photograph gets a calm brand panel, never a broken-image
-    // glyph. Production has dishes without photos (memory: the fan carousel
-    // pass found four most-liked dishes, three of them photoless).
-    final Widget fallback = ColoredBox(
-      color: AppColors.primarySoft,
-      child: Center(
-        child: Icon(
-          Icons.restaurant_menu,
-          size: 56,
-          color: AppColors.primary.withValues(alpha: 0.4),
-        ),
-      ),
-    );
-    // **Disk first, network second, brand panel last.**
-    //
-    // The cached copy is what makes the menu survive the outage it was
-    // downloaded for: `Image.network` alone turned every dish into a grey panel
-    // the moment the line dropped. `Image.memory` renders synchronously from
-    // bytes already in hand, so a cached menu paints on the first frame with no
-    // flicker through the fallback.
-    //
-    // The network branch remains for the window between a dish appearing in the
-    // catalogue and the next warming pass finishing — online only, by
-    // definition, and it degrades to the panel like everything else.
-    final Widget photo = _build(fallback);
+    // The picture itself is `KioskDishThumb`, shared with the cart row and the
+    // composer so a dish cannot look different depending on which screen shows
+    // it. This class keeps only what is specific to the card: the sold-out
+    // barrier drawn over the top.
+    final Widget photo = KioskDishThumb(photoUrl: url, cache: cache);
     if (!soldOut) {
       return photo;
     }
@@ -200,34 +179,6 @@ class _Photo extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  /// Resolves the three sources in order, without ever throwing into a menu.
-  Widget _build(Widget fallback) {
-    final String? source = url;
-    if (source == null || source.isEmpty) {
-      return fallback;
-    }
-    final Uint8List? cached = cache?.readSync(source);
-    if (cached != null) {
-      return Image.memory(
-        cached,
-        fit: BoxFit.cover,
-        // A corrupt cached file is a decoding failure, not a crash.
-        errorBuilder: (BuildContext _, Object _, StackTrace? _) => fallback,
-      );
-    }
-    // Not cached yet. A cache that refuses this URL outright (not https, or not
-    // the configured host) must not be bypassed by the network branch, or the
-    // rule would hold only until the first cache miss.
-    if (cache != null && !cache!.isAllowed(source)) {
-      return fallback;
-    }
-    return Image.network(
-      source,
-      fit: BoxFit.cover,
-      errorBuilder: (BuildContext _, Object _, StackTrace? _) => fallback,
     );
   }
 }

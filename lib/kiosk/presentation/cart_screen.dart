@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
+import '../catalog/dish_photo_cache.dart';
+import 'widgets/kiosk_dish_thumb.dart';
 import '../state/kiosk_cart.dart';
 import '../theme/kiosk_scale.dart';
 
@@ -13,6 +15,7 @@ import '../theme/kiosk_scale.dart';
 class KioskCartScreen extends StatelessWidget {
   const KioskCartScreen({
     required this.cart,
+    required this.cache,
     required this.onQuantity,
     required this.onRemove,
     required this.onConfirm,
@@ -22,6 +25,10 @@ class KioskCartScreen extends StatelessWidget {
   });
 
   final KioskCartState cart;
+
+  /// Where the dish photographs live, so the basket shows the same pictures the
+  /// menu did — from disk, with no network.
+  final DishPhotoCache? cache;
   final void Function(String lineId, int quantity) onQuantity;
   final void Function(String lineId) onRemove;
   final VoidCallback onConfirm;
@@ -63,6 +70,7 @@ class KioskCartScreen extends StatelessWidget {
                     itemBuilder: (BuildContext context, int index) {
                       final KioskCartItem item = cart.items[index];
                       return _CartRow(
+                        cache: cache,
                         item: item,
                         french: french,
                         removeLabel: l10n.kioskRemove,
@@ -147,6 +155,7 @@ class _ErrorBanner extends StatelessWidget {
 class _CartRow extends StatelessWidget {
   const _CartRow({
     required this.item,
+    required this.cache,
     required this.french,
     required this.removeLabel,
     required this.onQuantity,
@@ -157,6 +166,7 @@ class _CartRow extends StatelessWidget {
   final bool french;
   final String removeLabel;
   final void Function(int quantity) onQuantity;
+  final DishPhotoCache? cache;
   final VoidCallback onRemove;
 
   @override
@@ -174,6 +184,18 @@ class _CartRow extends StatelessWidget {
         padding: const EdgeInsets.all(KioskScale.gapMd),
         child: Row(
           children: <Widget>[
+            // The dish the customer actually chose, not just its name. They
+            // picked a photograph off the menu; seeing it again in the basket is
+            // how they check the basket at a glance (owner, 2026-08-18 — the
+            // cart showed text only).
+            KioskDishThumb(
+              photoUrl: item.product.photoUrl,
+              cache: cache,
+              size: KioskScale.minTarget,
+              radius: KioskScale.gap,
+              iconSize: 28,
+            ),
+            const SizedBox(width: KioskScale.gapMd),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
