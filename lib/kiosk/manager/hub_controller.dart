@@ -8,6 +8,7 @@ import 'package:pos_link/pos_link.dart';
 import 'package:pos_link_flutter/pos_link_flutter.dart';
 
 import '../state/kiosk_session.dart';
+import '../hub/hub_credential_store.dart';
 
 /// What the manager screen knows about the hub.
 @immutable
@@ -105,11 +106,22 @@ class HubController extends Notifier<HubState> {
 
     final PosEngine engine = ref.read(kioskEngineProvider);
     try {
+      // ⚠ Hydrated BEFORE the socket opens. `PairingRegistry` defaults to an
+      // in-memory credential store, so every restart forgot every paired
+      // kitchen: the board kept presenting a credential the hub had never heard
+      // of, and a restaurant saw the kiosk asking to pair again while the
+      // kitchen insisted it already had.
+      final HubCredentialStore credentials = HubCredentialStore.platform();
+      await credentials.load();
+
       final LanHubServer server = LanHubServer(
         engine: engine,
         // The registry is owned by the server: every claim it accepts is one
         // the server verified, so there is no second path to a credential.
-        pairing: PairingRegistry(collectionSecret: secret),
+        pairing: PairingRegistry(
+          collectionSecret: secret,
+          credentialStore: credentials,
+        ),
       );
       final HubEndpoint bound = await server.start();
       // ⚠ The server binds every interface, so it reports `0.0.0.0` — which is
