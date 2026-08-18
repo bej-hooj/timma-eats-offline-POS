@@ -15,8 +15,8 @@ edit — the context window can die mid-task.
 |---|---|---|---|
 | `timmaeat-app-flutter` | customer app + **SCHEMA OWNER**: all migrations, edge functions, the four `pos_*` packages | `91adddf` | — |
 | `timmaeat-webapp` | dashboard + landing, `ECOSYSTEM.md`, `design-tokens/tokens.json` | `da605f1` | — |
-| `timma-eats-offline-POS` | the kiosk — **and the store hub** | `7c47d9d` | 0.3.1+4 |
-| `timma-eats-offline-KDS` | the kitchen board | `76d9ef1` | 0.3.1+4 |
+| `timma-eats-offline-POS` | the kiosk — **and the store hub** | see `git log` | 0.3.5+8 |
+| `timma-eats-offline-KDS` | the kitchen board | see `git log` | 0.4.1+6 |
 
 ⚠ The app repo's shared checkout may sit on another session's branch — use
 `git worktree add /tmp/app main`. Check `git branch --show-current` before every
@@ -107,8 +107,9 @@ xcrun devicectl device process launch --terminate-existing \
 
 ### Phase 3 — order reaches the kitchen
 12. Place an order on the borne. It must appear on the cuisine **immediately**.
-13. ⚠ **The alarm is NOT built.** The owner has asked repeatedly for a ring on
-    every new order, online and offline. See "Work still to do" #1.
+13. **The alarm rings.** Built 2026-08-19 and device-proven on the emulator +
+    simulator pair: *Couper l'alarme* appears the moment a ticket lands. See
+    `timma-eats-offline-KDS/docs/board-link-and-alarm-2026-08-18.md`.
 14. Advance the ticket on the cuisine; the borne must follow.
 
 ### Phase 4 — offline (the whole point)
@@ -120,34 +121,42 @@ xcrun devicectl device process launch --terminate-existing \
 19. Restore internet: orders sync to the dashboard by themselves.
 
 ### A cuisine you can drive from a terminal
-`timma-eats-offline-KDS/tool/board_probe.dart` (⚠ **unfinished — see #4**) is
-meant to pair from the command line using the production `LanPairingClient` and
+`timma-eats-offline-KDS/tool/board_probe.dart` (fixed 2026-08-19, compiles) pairs from the command line using the production `LanPairingClient` and
 `LanSocketTransport` and print every board it receives, so phases 2–4 can be
 proven without tapping an iPhone:
 `dart run tool/board_probe.dart <host> <port> <code>`
 
 ## Work still to do, in priority order
 
-1. **The alarm — NOT BUILT.** Asked for repeatedly, never delivered. Every new
-   order must ring on the cuisine, online and offline, until acknowledged.
-   `timma-eats-offline-KDS/lib/kds/domain/kds_alarm.dart` exists; check it is
-   wired to arriving snapshots in `board_screen.dart`, that iOS plays audio in
-   silent mode, and that the two registers keep **separate seen-sets** (rule
-   already paid for: muting one run must never swallow the next order).
-2. **Verify the board-publish fix on hardware.** `LanHubServer.publishBoard()`
-   was never called after a kiosk sale (its own doc said the kiosk controller
-   must); fixed in POS `fd2fd26` and proven by tests, **not yet on devices**.
+*(Rewritten 2026-08-19. Items 1–4 of the previous list are done — see
+`timma-eats-offline-KDS/docs/board-link-and-alarm-2026-08-18.md` for what was
+actually wrong, which was more than the list said: the board had no socket at
+all, in either direction, and the kiosk announced every sale to a no-op.)*
+
+1. **The branch-secret conflict has no way out.** Re-pairing a kitchen to a
+   kiosk whose branch secret changed — a replaced or reinstalled kiosk — throws
+   `collection_secret_conflict`, the board says *"Impossible d'enregistrer la
+   clé de sécurité sur cette tablette"*, and on iOS the keychain survives an app
+   uninstall, so there is no way out from the device. `writeOnce`'s own doc says
+   rotation "requires an explicit recovery ceremony"; it was never built, and a
+   supervised pairing is exactly that ceremony. Fix belongs in
+   `pos_link_flutter` (app repo) and moves the pin in **both** tablet repos.
+2. **Drive the remaining two phases on the devices.** A cook's transition
+   travelling back to the borne is proven in `test/kds_link_test.dart` over a
+   real socket but has not been tapped on hardware, and the offline phase with
+   the wifi box has not been run at all.
 3. **Board content.** The cuisine still does not render line items, modifiers or
-   notes, does not drain its outbox, and does not verify a slip's collection code
-   before completing.
-4. **`tool/board_probe.dart` does not compile**: `BoardSnapshot` exposes
-   `orders` (of `BoardOrder`), not `tickets`. See `pos_link/lib/src/wire.dart`.
-5. **Combos / meals.** Planned in `docs/kiosk-menu-parity-and-combos-2026-08-18.md`
+   notes, and does not verify a slip's collection code before completing.
+4. **Combos / meals.** Planned in `docs/kiosk-menu-parity-and-combos-2026-08-18.md`
    (M3 client-side meal step, one page, nothing pre-ticked; M4 real dashboard
    combos need a snapshot-contract change). Add-to-cart from the card (M2) is
    also still to do.
-6. **`PosOrder` has no `fire_at`**, so the scheduled lane can never fill. Never
-   point the board at a branch taking scheduled orders.
+5. **`PosOrder` has no `fire_at`**, so the scheduled lane can never fill and the
+   alarm's *notice* register can never sound. Never point the board at a branch
+   taking scheduled orders.
+6. **`LanPairingClient` leaks its connect failure to the zone** — the UI is
+   right, but an unobserved async error fails a Dart test outright. Guarded in
+   `kds_pairing_handshake_test.dart`; fixing it is another pin move.
 
 ## Owner decisions blocking real data
 
@@ -179,5 +188,22 @@ proven without tapping an iPhone:
 
 ## Suites (all green at handoff)
 
-POS 103, KDS 35, pos_core 120, pos_link 69, pos_link_flutter 17, pos_cloud 58,
+POS 110, KDS 42, pos_core 120, pos_link 69, pos_link_flutter 17, pos_cloud 58,
 edge 9 (`npx deno test` — deno is not installed; npx is how it runs).
+
+## Running it on an emulator + a simulator
+
+Both surfaces run on one Mac, which is how this was proven on 2026-08-19:
+
+- borne on the Android emulator, cuisine on the iOS Simulator;
+- `adb forward tcp:8801 tcp:8801` — the simulator shares the host's network
+  stack, so it dials `127.0.0.1:8801` and reaches the emulator's hub;
+- build the APK with `--split-per-abi` and install `app-arm64-v8a-debug.apk`:
+  the fat debug APK is 170 MB and Android refuses to install below its
+  low-storage threshold (~10% of the data partition);
+- the app draws landscape inside a portrait simulator device, so screenshots
+  come out rotated — `sips -r -90` to read them, and remember taps are in the
+  device's portrait space (`x = 1170 - Y_landscape`, `y = X_landscape`, /3 for
+  points);
+- `adb shell svc power stayon true` after **every** emulator restart, or the
+  screen sleeps mid-run and `input` starts failing.
