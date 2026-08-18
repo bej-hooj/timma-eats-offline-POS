@@ -80,5 +80,35 @@
       }
     }
   },
-  "shiftCloseNoTicketNumber": "no number"
+  "shiftCloseNoTicketNumber": "no number",
+  "kioskManagerTitle": "Manager",
+  "kioskManagerPairKitchen": "Pair a kitchen",
+  "kioskManagerHubOn": "Kiosk visible on the wifi",
+  "kioskManagerHubOff": "Kiosk not started",
+  "kioskManagerBoards": "{count} kitchen(s) connected",
+  "@kioskManagerBoards": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskManagerCodeTitle": "Pairing code",
+  "kioskManagerCodeHint": "Type this code on the kitchen tablet.",
+  "kioskManagerCodeLeft": "Valid for {seconds} s",
+  "@kioskManagerCodeLeft": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskManagerCodeExpired": "Code expired. Start again.",
+  "kioskManagerNoSecret": "Security key missing: pairing is not possible.",
+  "kioskManagerPairFailed": "Pairing could not start.",
+  "kioskManagerHubFailed": "The kiosk could not start on the wifi.",
+  "kioskManagerPinTitle": "Manager code",
+  "kioskManagerPinWrong": "Wrong code.",
+  "kioskManagerPinOpen": "Open",
+  "kioskManagerPinUnset": "No manager code is configured on this kiosk."
 }

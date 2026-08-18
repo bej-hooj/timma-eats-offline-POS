@@ -56,7 +56,8 @@ class KioskCartItem {
     quantity: quantity,
     variantId: variant?.variantId,
     options: <PosCartOption>[
-      for (final SnapshotOption o in options) PosCartOption(optionId: o.optionId),
+      for (final SnapshotOption o in options)
+        PosCartOption(optionId: o.optionId),
     ],
   );
 }
@@ -67,7 +68,8 @@ class KioskCartState {
   final List<KioskCartItem> items;
 
   bool get isEmpty => items.isEmpty;
-  int get count => items.fold<int>(0, (int sum, KioskCartItem i) => sum + i.quantity);
+  int get count =>
+      items.fold<int>(0, (int sum, KioskCartItem i) => sum + i.quantity);
 
   /// Minor units, for the customer to read before they commit. Never sent.
   int get subtotal =>

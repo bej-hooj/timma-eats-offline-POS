@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Timma Kiosk</string>
+	<string>TIMMA Borne</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_timma-pos._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Cette borne annonce son service sur le réseau du restaurant pour que la tablette cuisine la trouve, et imprime sur l’imprimante du comptoir.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -47,17 +53,6 @@
 			</array>
 		</dict>
 	</dict>
-	<!-- iOS 14+ refuses mDNS/Bonjour and local-network sockets without BOTH of
-	     these. Missing them does not raise an error the app can see: discovery
-	     simply returns nothing forever, which reads as "the hub is offline"
-	     rather than "this build was never allowed to look". The service type
-	     must match `TimmaNsd.serviceType` in pos_link_flutter exactly. -->
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Cette borne annonce son service sur le réseau du restaurant pour que la tablette cuisine la trouve, et imprime sur l’imprimante du comptoir.</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_timma-pos._tcp</string>
-	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

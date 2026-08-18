@@ -403,6 +403,102 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'sans numéro'**
   String get shiftCloseNoTicketNumber;
+
+  /// No description provided for @kioskManagerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Responsable'**
+  String get kioskManagerTitle;
+
+  /// No description provided for @kioskManagerPairKitchen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparier une cuisine'**
+  String get kioskManagerPairKitchen;
+
+  /// No description provided for @kioskManagerHubOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Borne visible sur le wifi'**
+  String get kioskManagerHubOn;
+
+  /// No description provided for @kioskManagerHubOff.
+  ///
+  /// In fr, this message translates to:
+  /// **'Borne non démarrée'**
+  String get kioskManagerHubOff;
+
+  /// No description provided for @kioskManagerBoards.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} cuisine(s) connectée(s)'**
+  String kioskManagerBoards(int count);
+
+  /// No description provided for @kioskManagerCodeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code d\'appairage'**
+  String get kioskManagerCodeTitle;
+
+  /// No description provided for @kioskManagerCodeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez ce code sur la tablette cuisine.'**
+  String get kioskManagerCodeHint;
+
+  /// No description provided for @kioskManagerCodeLeft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valable encore {seconds} s'**
+  String kioskManagerCodeLeft(int seconds);
+
+  /// No description provided for @kioskManagerCodeExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code expiré. Recommencez.'**
+  String get kioskManagerCodeExpired;
+
+  /// No description provided for @kioskManagerNoSecret.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clé de sécurité manquante : impossible d\'apparier.'**
+  String get kioskManagerNoSecret;
+
+  /// No description provided for @kioskManagerPairFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'appairage n\'a pas pu démarrer.'**
+  String get kioskManagerPairFailed;
+
+  /// No description provided for @kioskManagerHubFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La borne n\'a pas pu démarrer sur le wifi.'**
+  String get kioskManagerHubFailed;
+
+  /// No description provided for @kioskManagerPinTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code responsable'**
+  String get kioskManagerPinTitle;
+
+  /// No description provided for @kioskManagerPinWrong.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code incorrect.'**
+  String get kioskManagerPinWrong;
+
+  /// No description provided for @kioskManagerPinOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir'**
+  String get kioskManagerPinOpen;
+
+  /// No description provided for @kioskManagerPinUnset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun code responsable configuré sur cette borne.'**
+  String get kioskManagerPinUnset;
 }
 
 class _AppLocalizationsDelegate

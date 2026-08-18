@@ -129,8 +129,7 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                     variants: widget.product.variants,
                     selected: _variant,
                     french: french,
-                    onPick: (SnapshotVariant v) =>
-                        setState(() => _variant = v),
+                    onPick: (SnapshotVariant v) => setState(() => _variant = v),
                   ),
                 for (final SnapshotOptionGroup group
                     in widget.product.optionGroups)

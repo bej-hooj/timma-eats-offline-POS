@@ -6,6 +6,8 @@ import 'package:pos_core/pos_core.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import 'printing/slip.dart';
 import 'hub/dev_provisioning.dart';
+import 'manager/manager_gate.dart';
+import 'manager/manager_screen.dart';
 import 'presentation/attract_screen.dart';
 import 'presentation/cart_screen.dart';
 import 'presentation/composer_sheet.dart';
@@ -153,6 +155,20 @@ class _KioskShellState extends ConsumerState<KioskShell> {
     );
   }
 
+  /// The PIN is checked before the screen is built, so nothing about the shift
+  /// or the hub is on screen until it passes.
+  Future<void> _openManager(BuildContext context) async {
+    final NavigatorState navigator = Navigator.of(context);
+    if (!await KioskManagerGate.unlock(context) || !mounted) {
+      return;
+    }
+    await navigator.push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const KioskManagerScreen(),
+      ),
+    );
+  }
+
   Widget _body(KioskSessionState session, KioskSessionController controller) {
     switch (session.stage) {
       case KioskStage.outOfService:
@@ -162,6 +178,7 @@ class _KioskShellState extends ConsumerState<KioskShell> {
         return KioskAttractScreen(
           key: const ValueKey<String>('attract'),
           onStart: controller.start,
+          onManager: () => _openManager(context),
         );
 
       case KioskStage.menu:

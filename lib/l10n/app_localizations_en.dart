@@ -172,4 +172,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shiftCloseNoTicketNumber => 'no number';
+
+  @override
+  String get kioskManagerTitle => 'Manager';
+
+  @override
+  String get kioskManagerPairKitchen => 'Pair a kitchen';
+
+  @override
+  String get kioskManagerHubOn => 'Kiosk visible on the wifi';
+
+  @override
+  String get kioskManagerHubOff => 'Kiosk not started';
+
+  @override
+  String kioskManagerBoards(int count) {
+    return '$count kitchen(s) connected';
+  }
+
+  @override
+  String get kioskManagerCodeTitle => 'Pairing code';
+
+  @override
+  String get kioskManagerCodeHint => 'Type this code on the kitchen tablet.';
+
+  @override
+  String kioskManagerCodeLeft(int seconds) {
+    return 'Valid for $seconds s';
+  }
+
+  @override
+  String get kioskManagerCodeExpired => 'Code expired. Start again.';
+
+  @override
+  String get kioskManagerNoSecret =>
+      'Security key missing: pairing is not possible.';
+
+  @override
+  String get kioskManagerPairFailed => 'Pairing could not start.';
+
+  @override
+  String get kioskManagerHubFailed => 'The kiosk could not start on the wifi.';
+
+  @override
+  String get kioskManagerPinTitle => 'Manager code';
+
+  @override
+  String get kioskManagerPinWrong => 'Wrong code.';
+
+  @override
+  String get kioskManagerPinOpen => 'Open';
+
+  @override
+  String get kioskManagerPinUnset =>
+      'No manager code is configured on this kiosk.';
 }

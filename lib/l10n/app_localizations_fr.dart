@@ -173,4 +173,60 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shiftCloseNoTicketNumber => 'sans numéro';
+
+  @override
+  String get kioskManagerTitle => 'Responsable';
+
+  @override
+  String get kioskManagerPairKitchen => 'Apparier une cuisine';
+
+  @override
+  String get kioskManagerHubOn => 'Borne visible sur le wifi';
+
+  @override
+  String get kioskManagerHubOff => 'Borne non démarrée';
+
+  @override
+  String kioskManagerBoards(int count) {
+    return '$count cuisine(s) connectée(s)';
+  }
+
+  @override
+  String get kioskManagerCodeTitle => 'Code d\'appairage';
+
+  @override
+  String get kioskManagerCodeHint =>
+      'Saisissez ce code sur la tablette cuisine.';
+
+  @override
+  String kioskManagerCodeLeft(int seconds) {
+    return 'Valable encore $seconds s';
+  }
+
+  @override
+  String get kioskManagerCodeExpired => 'Code expiré. Recommencez.';
+
+  @override
+  String get kioskManagerNoSecret =>
+      'Clé de sécurité manquante : impossible d\'apparier.';
+
+  @override
+  String get kioskManagerPairFailed => 'L\'appairage n\'a pas pu démarrer.';
+
+  @override
+  String get kioskManagerHubFailed =>
+      'La borne n\'a pas pu démarrer sur le wifi.';
+
+  @override
+  String get kioskManagerPinTitle => 'Code responsable';
+
+  @override
+  String get kioskManagerPinWrong => 'Code incorrect.';
+
+  @override
+  String get kioskManagerPinOpen => 'Ouvrir';
+
+  @override
+  String get kioskManagerPinUnset =>
+      'Aucun code responsable configuré sur cette borne.';
 }

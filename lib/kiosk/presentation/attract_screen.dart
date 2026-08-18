@@ -13,9 +13,18 @@ import '../theme/kiosk_scale.dart';
 /// allowed, because there is no customer waiting on it — a 200 ms curve here
 /// would read as a twitch in an empty room.
 class KioskAttractScreen extends StatefulWidget {
-  const KioskAttractScreen({required this.onStart, super.key});
+  const KioskAttractScreen({required this.onStart, this.onManager, super.key});
 
   final VoidCallback onStart;
+
+  /// Opened by a **long press on the mark**, and by nothing else.
+  ///
+  /// The kiosk is unattended and facing the street: a visible *Responsable*
+  /// button is a door for whoever walks up to it. A long press on the logo is
+  /// discoverable by staff who are told about it once, and invisible to
+  /// everyone else. `PopScope` still refuses the back gesture, so this remains
+  /// the only way out of the customer flow (§K8).
+  final VoidCallback? onManager;
 
   @override
   State<KioskAttractScreen> createState() => _KioskAttractScreenState();
@@ -62,6 +71,12 @@ class _KioskAttractScreenState extends State<KioskAttractScreen>
         // for a button.
         behavior: HitTestBehavior.opaque,
         onTap: widget.onStart,
+        // ⚠ On the SAME detector as `onTap`, deliberately. A long press on an
+        // inner widget wrapped by this one lost the gesture arena: Flutter's
+        // tap recogniser has no maximum duration, so a hold-then-release fired
+        // `onStart` as well and the manager screen never appeared (measured on
+        // the Samsung). One detector means the arena picks exactly one winner.
+        onLongPress: widget.onManager,
         child: ColoredBox(
           color: theme.colorScheme.primary,
           // ⚠ Sized off the height it has, not off constants. At 411 dp — the

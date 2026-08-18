@@ -80,5 +80,35 @@
       }
     }
   },
-  "shiftCloseNoTicketNumber": "sans numéro"
+  "shiftCloseNoTicketNumber": "sans numéro",
+  "kioskManagerTitle": "Responsable",
+  "kioskManagerPairKitchen": "Apparier une cuisine",
+  "kioskManagerHubOn": "Borne visible sur le wifi",
+  "kioskManagerHubOff": "Borne non démarrée",
+  "kioskManagerBoards": "{count} cuisine(s) connectée(s)",
+  "@kioskManagerBoards": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskManagerCodeTitle": "Code d'appairage",
+  "kioskManagerCodeHint": "Saisissez ce code sur la tablette cuisine.",
+  "kioskManagerCodeLeft": "Valable encore {seconds} s",
+  "@kioskManagerCodeLeft": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskManagerCodeExpired": "Code expiré. Recommencez.",
+  "kioskManagerNoSecret": "Clé de sécurité manquante : impossible d'apparier.",
+  "kioskManagerPairFailed": "L'appairage n'a pas pu démarrer.",
+  "kioskManagerHubFailed": "La borne n'a pas pu démarrer sur le wifi.",
+  "kioskManagerPinTitle": "Code responsable",
+  "kioskManagerPinWrong": "Code incorrect.",
+  "kioskManagerPinOpen": "Ouvrir",
+  "kioskManagerPinUnset": "Aucun code responsable configuré sur cette borne."
 }
