@@ -81,11 +81,15 @@ void main() {
         await tester.tap(find.text('ouvrir'));
         await tester.pumpAndSettle();
 
-        // Every control a manager needs is present…
-        expect(find.text('Code responsable'), findsOneWidget);
+        // Every control a manager needs is present. The title is the one thing
+        // allowed to go when the keypad leaves no room — the field is
+        // autofocused and the screen behind it is unambiguous.
         expect(find.byType(TextField), findsOneWidget);
         expect(find.text('Ouvrir'), findsOneWidget);
         expect(find.text('Annuler'), findsOneWidget);
+        if (keyboard.value == 0) {
+          expect(find.text('Code responsable'), findsOneWidget);
+        }
 
         // …and nothing overflowed. `pumpAndSettle` would not have thrown for a
         // RenderFlex overflow — it paints an error stripe and carries on — so
@@ -97,20 +101,34 @@ void main() {
               '${keyboard.value}dp of keyboard',
         );
 
-        // The field is what a manager types into; it must be on screen, not
-        // merely in the tree.
-        final Rect field = tester.getRect(find.byType(TextField));
+        // ⚠ **On screen, not merely in the tree, and not merely scrollable.**
+        // The version before this one passed every assertion above while
+        // drawing *Annuler* and *Ouvrir* below the fold of its own scroll view:
+        // legal, no overflow, and a manager staring at a PIN dialog with no
+        // visible way to confirm it.
         final Rect visible = Rect.fromLTWH(
           0,
           0,
           screen.value.width,
           screen.value.height - keyboard.value,
         );
-        expect(
-          visible.contains(field.topLeft) && visible.contains(field.bottomRight),
-          isTrue,
-          reason: 'the PIN field was drawn off screen, or under the keyboard',
-        );
+        bool fullyVisible(Finder finder) {
+          final Rect r = tester.getRect(finder);
+          return visible.contains(r.topLeft) && visible.contains(r.bottomRight);
+        }
+
+        for (final Finder control in <Finder>[
+          find.byType(TextField),
+          find.widgetWithText(FilledButton, 'Ouvrir'),
+          find.widgetWithText(TextButton, 'Annuler'),
+        ]) {
+          expect(
+            fullyVisible(control),
+            isTrue,
+            reason: 'a control was drawn off screen or under the keyboard: '
+                '${tester.getRect(control)} outside $visible',
+          );
+        }
       });
     }
   }

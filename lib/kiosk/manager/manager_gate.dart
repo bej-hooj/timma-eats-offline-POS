@@ -93,68 +93,93 @@ class _KioskManagerPinDialogState extends State<KioskManagerPinDialog> {
         horizontal: KioskScale.gapXl,
         vertical: KioskScale.gap,
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(KioskScale.gapMd),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              l10n.kioskManagerPinTitle,
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: KioskScale.gapMd),
-            TextField(
-              controller: _entry,
-              autofocus: true,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(8),
-              ],
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: KioskScale.bodySize,
-                letterSpacing: 6,
-              ),
-              decoration: const InputDecoration(counterText: ''),
-              onSubmitted: (_) => _submit(),
-            ),
-            if (_wrong) ...<Widget>[
-              const SizedBox(height: KioskScale.gap),
-              Text(
-                l10n.kioskManagerPinWrong,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-            ],
-            const SizedBox(height: KioskScale.gapMd),
-            Row(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          // ⚠ **Scrolling is the floor, not the answer.** With the keypad up
+          // this dialog has about 169 dp on a 448 dp landscape screen, and the
+          // full-size version needs 230 — so it fitted, legally, with *Annuler*
+          // and *Ouvrir* below the fold. A manager who has to scroll a PIN
+          // dialog to find its own OK button has been given a puzzle, not a
+          // door. When the room is short the title goes (the field is
+          // autofocused and the screen behind it is unambiguous) and the
+          // buttons come down to 56 dp — still above the Material floor, and
+          // this is a manager with a keyboard open, not a cook with wet hands
+          // reaching for a ticket.
+          final bool short = constraints.maxHeight < 240;
+          final double gap = short ? KioskScale.gap : KioskScale.gapMd;
+          final ButtonStyle compact = short
+              ? const ButtonStyle(
+                  minimumSize: WidgetStatePropertyAll<Size>(Size(0, 56)),
+                )
+              : const ButtonStyle();
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(gap),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                // Expanded on both, because the kiosk theme gives buttons an
-                // infinite `minimumSize` width — right for a full-width card
-                // action, an unbounded-width crash inside a Row.
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: Text(l10n.kioskCancel),
+                if (!short) ...<Widget>[
+                  Text(
+                    l10n.kioskManagerPinTitle,
+                    style: theme.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
                   ),
+                  SizedBox(height: gap),
+                ],
+                TextField(
+                  controller: _entry,
+                  autofocus: true,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(8),
+                  ],
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: KioskScale.bodySize,
+                    letterSpacing: 6,
+                  ),
+                  decoration: const InputDecoration(counterText: ''),
+                  onSubmitted: (_) => _submit(),
                 ),
-                const SizedBox(width: KioskScale.gap),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _submit,
-                    child: Text(l10n.kioskManagerPinOpen),
+                if (_wrong) ...<Widget>[
+                  const SizedBox(height: KioskScale.gap),
+                  Text(
+                    l10n.kioskManagerPinWrong,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
                   ),
+                ],
+                SizedBox(height: gap),
+                Row(
+                  children: <Widget>[
+                    // Expanded on both, because the kiosk theme gives buttons an
+                    // infinite `minimumSize` width — right for a full-width card
+                    // action, an unbounded-width crash inside a Row.
+                    Expanded(
+                      child: TextButton(
+                        style: compact,
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text(l10n.kioskCancel),
+                      ),
+                    ),
+                    const SizedBox(width: KioskScale.gap),
+                    Expanded(
+                      child: FilledButton(
+                        style: compact,
+                        onPressed: _submit,
+                        child: Text(l10n.kioskManagerPinOpen),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
