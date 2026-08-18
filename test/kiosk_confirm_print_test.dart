@@ -435,6 +435,96 @@ void main() {
     }
   });
 
+  testWidgets('the kitchen is told about the sale, before the slip', (
+    tester,
+  ) async {
+    // ⚠ The defect this exists for, reported from two paired devices: a customer
+    // ordered at the kiosk and the kitchen stayed empty. `LanHubServer`
+    // broadcasts when it applies an intent FROM a board, and its own
+    // documentation says the kiosk controller must call `publishBoard()` after a
+    // local sale — nothing did. The sale was durable and invisible.
+    int published = 0;
+    printer.failForever = true; // paper is optional; the kitchen is not
+    await pump(
+      tester,
+      ProviderScope(
+        overrides: [
+          kioskEngineProvider.overrideWithValue(engine),
+          kioskPrintQueueProvider.overrideWithValue(queue()),
+          kioskCollectionSecretProvider.overrideWithValue(secret),
+          kioskBoardPublisherProvider.overrideWithValue(() => published++),
+        ],
+        child: const KioskApp(),
+      ),
+    );
+    await toCart(tester);
+    await tester.tap(confirmButton());
+    await tester.pumpAndSettle();
+
+    expect(store.allOrders(), hasLength(1));
+    expect(
+      published,
+      1,
+      reason: 'exactly one board publish per sale — the kitchen learns of it '
+          'even though this printer never answered',
+    );
+  });
+
+  testWidgets('a refused sale tells the kitchen nothing', (tester) async {
+    int published = 0;
+    await pump(
+      tester,
+      ProviderScope(
+        overrides: [
+          kioskEngineProvider.overrideWithValue(engine),
+          kioskPrintQueueProvider.overrideWithValue(queue()),
+          kioskCollectionSecretProvider.overrideWithValue(secret),
+          kioskBoardPublisherProvider.overrideWithValue(() => published++),
+        ],
+        child: const KioskApp(),
+      ),
+    );
+    await toCart(tester);
+
+    // Sold out between browsing and confirming.
+    const MenuSnapshot draft = MenuSnapshot(
+      version: 2,
+      branchId: 'branch-1',
+      declaredProductCount: 1,
+      products: <SnapshotProduct>[
+        SnapshotProduct(
+          productId: 'p-poulet',
+          nameFr: 'Poulet DG',
+          nameEn: 'Chicken DG',
+          basePrice: 3500,
+          type: 'dish',
+          available: false,
+        ),
+      ],
+      checksum: '',
+    );
+    final MenuSnapshot soldOut = MenuSnapshot(
+      version: draft.version,
+      branchId: draft.branchId,
+      declaredProductCount: draft.declaredProductCount,
+      products: draft.products,
+      checksum: draft.computeChecksum(),
+    );
+    store.stageSnapshot(soldOut, DateTime.utc(2026, 8, 18));
+    store.activateSnapshot(soldOut.version, DateTime.utc(2026, 8, 18));
+
+    await tester.tap(confirmButton());
+    await tester.pumpAndSettle();
+
+    expect(store.allOrders(), isEmpty);
+    expect(
+      published,
+      0,
+      reason: 'a ticket for an order that does not exist is the worst thing '
+          'this screen could put in a kitchen',
+    );
+  });
+
   testWidgets('a dish sold out at the last moment prints nothing at all', (
     tester,
   ) async {

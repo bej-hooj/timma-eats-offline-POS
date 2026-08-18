@@ -237,6 +237,12 @@ class HubController extends Notifier<HubState> {
   /// visible half.
   void clearCode() => state = state.copyWith(clearCode: true);
 
+  /// Pushes the current board to every authenticated kitchen.
+  ///
+  /// Safe to call when no hub is running or no board is paired — the kiosk sells
+  /// either way, and this is the notification, not the sale.
+  void publishBoard() => _server?.publishBoard();
+
   Future<void> stop() async {
     _poll?.cancel();
     _poll = null;

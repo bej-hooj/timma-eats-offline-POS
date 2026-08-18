@@ -19,6 +19,7 @@ import 'kiosk/hub/collection_secret_owner.dart';
 import 'kiosk/hub/dev_provisioning.dart';
 import 'kiosk/hub/device_key_vault.dart';
 import 'kiosk/kiosk_app.dart';
+import 'kiosk/manager/hub_controller.dart';
 import 'kiosk/printing/print_queue.dart';
 import 'kiosk/printing/socket_printer.dart';
 import 'kiosk/presentation/bootstrap_screen.dart';
@@ -109,7 +110,7 @@ Future<void> main() async {
         kioskPrintQueueProvider.overrideWithValue(_printQueue()),
         kioskPhotoCacheProvider.overrideWithValue(photos),
       ],
-      child: const KioskApp(),
+      child: const _KioskWithHub(),
     ),
   );
 
@@ -273,4 +274,49 @@ PrintQueue? _printQueue() {
   return PrintQueue(
     transport: SocketPrinter(host: host, port: port),
   );
+}
+
+/// Wires the board publisher to the running hub, once the container exists.
+///
+/// The sale path must not depend on the LAN server — an unpaired kiosk sells
+/// perfectly well — so the dependency points this way: the shell tells the
+/// session controller HOW to publish, and the controller never knows what a hub
+/// is.
+class _KioskWithHub extends ConsumerStatefulWidget {
+  const _KioskWithHub();
+
+  @override
+  ConsumerState<_KioskWithHub> createState() => _KioskWithHubState();
+}
+
+class _KioskWithHubState extends ConsumerState<_KioskWithHub> {
+  @override
+  void initState() {
+    super.initState();
+    // ⚠ **The kiosk IS the hub, from the moment it opens** — not from the moment
+    // a manager visits a screen. The hub used to start only inside the manager
+    // screen, so after any restart the kitchen was orphaned until somebody went
+    // looking for it, and a restaurant reboots a tablet far more often than it
+    // opens a manager screen.
+    //
+    // It lives here, in the production composition root, and not in the shell
+    // widget: widget tests build `KioskApp` directly, and a real `HttpServer`
+    // inside a `FakeAsync` test is a pending timer that fails the suite for a
+    // reason that has nothing to do with the test.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(ref.read(hubProvider.notifier).start());
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        kioskBoardPublisherProvider.overrideWithValue(
+          () => ref.read(hubProvider.notifier).publishBoard(),
+        ),
+      ],
+      child: const KioskApp(),
+    );
+  }
 }

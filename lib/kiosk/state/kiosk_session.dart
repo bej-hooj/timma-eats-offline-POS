@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -197,6 +197,15 @@ class KioskSessionController extends Notifier<KioskSessionState> {
       printState: KioskPrintState.printing,
     );
     _arm(counterHold);
+
+    // The kitchen learns about the sale here, before the slip is even printed:
+    // paper is optional, the kitchen is not.
+    try {
+      ref.read(kioskBoardPublisherProvider)();
+    } on Object {
+      // A board nobody is listening to must not cost the customer their order.
+      debugPrint('[Kiosk] board publish failed — order is placed regardless');
+    }
     await _printSlip(placed, labels: labels, french: french);
   }
 
@@ -353,6 +362,19 @@ final Provider<BranchCollectionSecret?> kioskCollectionSecretProvider =
 /// caches over one directory would race each other's writes.
 final Provider<DishPhotoCache?> kioskPhotoCacheProvider =
     Provider<DishPhotoCache?>((Ref ref) => null);
+
+/// Publishes the authoritative board to every paired kitchen.
+///
+/// ⚠ **This is what makes an order appear in the kitchen.** `LanHubServer`
+/// broadcasts when it applies an intent FROM a board, and its own documentation
+/// says the kiosk controller must call `publishBoard()` after a local sale — and
+/// nothing did. So a customer could order at the kiosk and the kitchen would sit
+/// empty until a cook happened to touch something. Reported from the devices.
+///
+/// A function rather than the hub itself, so the sale path does not depend on
+/// the LAN server at all: an unpaired kiosk overrides nothing and still sells.
+final Provider<void Function()> kioskBoardPublisherProvider =
+    Provider<void Function()>((Ref ref) => () {});
 
 /// The kiosk's print queue, or null when no printer is provisioned.
 ///
