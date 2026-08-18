@@ -470,6 +470,56 @@ void main() {
     );
   });
 
+  testWidgets(
+    'the publisher must be overridden at the ROOT, not in a child scope',
+    (tester) async {
+      // ⚠ **The second half of the same defect, and the half a green suite hid
+      // for a whole release.** The call site above was fixed and proven — by a
+      // test that built one container and overrode at its root, which is the
+      // shape that works. Production put the override in a child
+      // `ProviderScope` wrapping `KioskApp`, and Riverpod 3 does not
+      // re-instantiate a provider in a child scope merely because it reads an
+      // overridden one: `kioskSessionProvider` lives in the root container, so
+      // it read the **default no-op** and announced every sale to nobody. On
+      // the devices the kitchen stayed empty through a complete order while
+      // `/health` cheerfully reported one connected board.
+      //
+      // This pins the semantics rather than the symptom, so the wiring cannot
+      // quietly go back to a shape that compiles, passes, and sells in silence.
+      int published = 0;
+      await pump(
+        tester,
+        ProviderScope(
+          overrides: [
+            kioskEngineProvider.overrideWithValue(engine),
+            kioskPrintQueueProvider.overrideWithValue(queue()),
+            kioskCollectionSecretProvider.overrideWithValue(secret),
+          ],
+          child: ProviderScope(
+            overrides: [
+              kioskBoardPublisherProvider.overrideWithValue(() => published++),
+            ],
+            child: const KioskApp(),
+          ),
+        ),
+      );
+      await toCart(tester);
+      await tester.tap(confirmButton());
+      await tester.pumpAndSettle();
+
+      expect(store.allOrders(), hasLength(1), reason: 'the sale is durable');
+      expect(
+        published,
+        0,
+        reason:
+            'if this ever reaches 1, Riverpod has started scoping by '
+            'transitive dependency and the root-scope requirement in '
+            'main.dart can be relaxed — until then, moving the override '
+            'into a child scope silently unplugs the kitchen',
+      );
+    },
+  );
+
   testWidgets('a refused sale tells the kitchen nothing', (tester) async {
     int published = 0;
     await pump(

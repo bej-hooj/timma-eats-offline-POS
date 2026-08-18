@@ -109,6 +109,17 @@ Future<void> main() async {
         kioskCollectionSecretProvider.overrideWithValue(secret),
         kioskPrintQueueProvider.overrideWithValue(_printQueue()),
         kioskPhotoCacheProvider.overrideWithValue(photos),
+        // ⚠ **At the ROOT, not in a child `ProviderScope`.** It was in one, and
+        // the kitchen stayed empty through a whole sale on the devices while
+        // every test passed. Riverpod 3 does not re-instantiate a provider in a
+        // child scope just because it reads an overridden one: the session
+        // controller lives in the root container, so `ref.read` of the
+        // publisher there returned the **default no-op** and the sale was
+        // announced to nobody. The unit test could not see it — it built one
+        // container and overrode at its root, which is the shape that works.
+        kioskBoardPublisherProvider.overrideWith(
+          (Ref ref) => () => ref.read(hubProvider.notifier).publishBoard(),
+        ),
       ],
       child: const _KioskWithHub(),
     ),
@@ -276,12 +287,12 @@ PrintQueue? _printQueue() {
   );
 }
 
-/// Wires the board publisher to the running hub, once the container exists.
+/// Starts the hub once the first frame is up.
 ///
 /// The sale path must not depend on the LAN server — an unpaired kiosk sells
-/// perfectly well — so the dependency points this way: the shell tells the
-/// session controller HOW to publish, and the controller never knows what a hub
-/// is.
+/// perfectly well — so the dependency points the other way: the composition
+/// root tells the session controller HOW to publish (above, at the root scope),
+/// and the controller never knows what a hub is.
 class _KioskWithHub extends ConsumerStatefulWidget {
   const _KioskWithHub();
 
@@ -309,14 +320,5 @@ class _KioskWithHubState extends ConsumerState<_KioskWithHub> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: [
-        kioskBoardPublisherProvider.overrideWithValue(
-          () => ref.read(hubProvider.notifier).publishBoard(),
-        ),
-      ],
-      child: const KioskApp(),
-    );
-  }
+  Widget build(BuildContext context) => const KioskApp();
 }
