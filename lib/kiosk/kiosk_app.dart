@@ -144,6 +144,19 @@ class _KioskShellState extends ConsumerState<KioskShell> {
         behavior: HitTestBehavior.translucent,
         onPointerDown: (_) => controller.noteActivity(),
         child: Scaffold(
+          // ⚠ **The attract screen must not shrink for somebody else's
+          // keyboard.** Long-pressing it opens the manager PIN dialog, whose
+          // keypad took 263 dp of a 448 dp landscape screen; the Scaffold
+          // dutifully resized the body under the dialog and the attract
+          // column — which sizes itself off the height it is given — overflowed
+          // by 77 px, painting a hazard stripe across the first thing a
+          // customer ever sees. It has no field of its own, so it has no
+          // business resizing. Every other stage keeps the default: the menu
+          // has a search bar, and hiding that under the keyboard would be the
+          // same bug pointing the other way.
+          resizeToAvoidBottomInset: session.stage == KioskStage.attract
+              ? false
+              : null,
           body: SafeArea(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),

@@ -94,61 +94,75 @@ class _KioskAttractScreenState extends State<KioskAttractScreen>
                 KioskScale.gapMd,
                 KioskScale.gapXxl,
               );
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    // The real TIMMA logo, the same asset the customer app
-                    // ships. A customer who met the brand on their phone should
-                    // recognise the screen they walk up to — the abstract mark
-                    // this replaced was ours, not theirs.
-                    //
-                    // It degrades to the vector mark rather than to a broken
-                    // image box: an attract screen with a grey glyph on it is
-                    // the first thing anyone sees of the restaurant.
-                    Image.asset(
-                      'assets/branding/logo_inline.png',
-                      height: markSize,
-                      fit: BoxFit.contain,
-                      errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
-                          TimmaMark(
-                            size: markSize,
+              // ⚠ **And it must not overflow even when the height is taken
+              // away.** Not resizing (see `kiosk_app.dart`) is the right
+              // behaviour; being unable to survive a short viewport is a
+              // separate fragility, and this screen has now overflowed twice —
+              // 91 px from fixed sizes, 77 px from the manager keypad. A scroll
+              // view cannot overflow, so at any height the worst case is a
+              // screen a finger can move rather than a hazard stripe across the
+              // first thing a customer sees.
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: height),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        // The real TIMMA logo, the same asset the customer app
+                        // ships. A customer who met the brand on their phone should
+                        // recognise the screen they walk up to — the abstract mark
+                        // this replaced was ours, not theirs.
+                        //
+                        // It degrades to the vector mark rather than to a broken
+                        // image box: an attract screen with a grey glyph on it is
+                        // the first thing anyone sees of the restaurant.
+                        Image.asset(
+                          'assets/branding/logo_inline.png',
+                          height: markSize,
+                          fit: BoxFit.contain,
+                          errorBuilder:
+                              (BuildContext _, Object _, StackTrace? _) =>
+                                  TimmaMark(
+                                    size: markSize,
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
+                        ),
+                        SizedBox(height: breather),
+                        Text(
+                          l10n.kioskAttractTitle,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.displayLarge?.copyWith(
                             color: theme.colorScheme.onPrimary,
                           ),
-                    ),
-                    SizedBox(height: breather),
-                    Text(
-                      l10n.kioskAttractTitle,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.displayLarge?.copyWith(
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: KioskScale.gap),
-                    Text(
-                      l10n.kioskTakeAway,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: theme.colorScheme.onPrimary.withValues(
-                          alpha: 0.75,
                         ),
-                      ),
-                    ),
-                    SizedBox(height: breather),
-                    FadeTransition(
-                      opacity: Tween<double>(begin: 0.45, end: 1).animate(
-                        CurvedAnimation(
-                          parent: _breath,
-                          curve: Curves.easeInOut,
+                        const SizedBox(height: KioskScale.gap),
+                        Text(
+                          l10n.kioskTakeAway,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: theme.colorScheme.onPrimary.withValues(
+                              alpha: 0.75,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        l10n.kioskAttractSubtitle,
-                        style: theme.textTheme.headlineLarge?.copyWith(
-                          color: theme.colorScheme.onPrimary,
+                        SizedBox(height: breather),
+                        FadeTransition(
+                          opacity: Tween<double>(begin: 0.45, end: 1).animate(
+                            CurvedAnimation(
+                              parent: _breath,
+                              curve: Curves.easeInOut,
+                            ),
+                          ),
+                          child: Text(
+                            l10n.kioskAttractSubtitle,
+                            style: theme.textTheme.headlineLarge?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },

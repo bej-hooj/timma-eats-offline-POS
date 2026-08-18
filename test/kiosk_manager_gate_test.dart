@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timma_kiosk/kiosk/manager/manager_gate.dart';
+import 'package:timma_kiosk/kiosk/presentation/attract_screen.dart';
 import 'package:timma_kiosk/kiosk/theme/kiosk_theme.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 
@@ -31,6 +32,11 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
         builder: (BuildContext context) => Scaffold(
+          // The real screen the dialog opens over, and the real reason it must
+          // not resize: `KioskAttractScreen` sizes itself off the height it is
+          // given, so a Scaffold that shrinks for the keypad hands it 185 dp and
+          // it overflows behind the dialog.
+          resizeToAvoidBottomInset: false,
           body: Center(
             child: ElevatedButton(
               // The dialog directly, not `KioskManagerGate.unlock`: a test
