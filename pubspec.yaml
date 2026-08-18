@@ -61,10 +61,26 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.24
 
 dev_dependencies:
+  # The tablet wears the TIMMA logo like the customer app does: same source
+  # image, same adaptive-icon background, so the three surfaces are one brand on
+  # a home screen (ECOSYSTEM §15.5).
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/branding/
   generate: true
+
+flutter_launcher_icons:
+  image_path: "assets/branding/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  # TIMMA brand green behind the adaptive icon foreground (ECOSYSTEM §15.5).
+  adaptive_icon_background: "#205A39"
+  adaptive_icon_foreground: "assets/branding/app_icon.png"

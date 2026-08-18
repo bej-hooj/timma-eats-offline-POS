@@ -83,9 +83,23 @@ class _KioskAttractScreenState extends State<KioskAttractScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    TimmaMark(
-                      size: markSize,
-                      color: theme.colorScheme.onPrimary,
+                    // The real TIMMA logo, the same asset the customer app
+                    // ships. A customer who met the brand on their phone should
+                    // recognise the screen they walk up to — the abstract mark
+                    // this replaced was ours, not theirs.
+                    //
+                    // It degrades to the vector mark rather than to a broken
+                    // image box: an attract screen with a grey glyph on it is
+                    // the first thing anyone sees of the restaurant.
+                    Image.asset(
+                      'assets/branding/logo_inline.png',
+                      height: markSize,
+                      fit: BoxFit.contain,
+                      errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
+                          TimmaMark(
+                            size: markSize,
+                            color: theme.colorScheme.onPrimary,
+                          ),
                     ),
                     SizedBox(height: breather),
                     Text(
