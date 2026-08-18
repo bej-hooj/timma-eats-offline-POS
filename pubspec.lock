@@ -657,8 +657,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_cloud"
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
-      resolved-ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
+      resolved-ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
@@ -666,8 +666,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_core"
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
-      resolved-ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
+      resolved-ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
@@ -675,8 +675,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_link"
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
-      resolved-ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
+      resolved-ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
@@ -684,8 +684,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_link_flutter"
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
-      resolved-ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
+      resolved-ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
@@ -927,7 +927,7 @@ packages:
     source: hosted
     version: "0.1.2"
   supabase_flutter:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: supabase_flutter
       sha256: "26eb3d3b71bcc5651551e64d6b131ba929ea261998570bbcc90356b1b42fd532"

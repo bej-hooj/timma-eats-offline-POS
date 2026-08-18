@@ -17,6 +17,13 @@ dependencies:
   path_provider: ^2.1.5
   # Named because this repo's own code imports them directly.
   crypto: ^3.0.7
+
+  # The kiosk is offline-FIRST, not offline-only: when the shop's line is up it
+  # pulls the dashboard's published catalogue through `rpc_menu_snapshot` and
+  # pins it, so the menu a customer sees is the one ops edited. `pos_cloud`
+  # owns every RPC; this dependency exists only so the composition root can
+  # initialise the client and hand it over.
+  supabase_flutter: ^2.10.4
   timezone: ^0.10.0
 
   # The offline engine and the transports, PINNED to a commit.
@@ -32,22 +39,22 @@ dependencies:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_core
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
   pos_link:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
   pos_link_flutter:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link_flutter
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
   pos_cloud:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_cloud
-      ref: ea872acf1e175b7db1e09c0767ee1ca1621d754b
+      ref: d5cf80f7a7e55e71db200865cff5f5c0a8873bcf
 
   # The native SQLite pos_core opens. Its own pubspec says this belongs in "the
   # two APPS' pubspecs" — this is one of the two.

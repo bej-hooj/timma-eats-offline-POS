@@ -98,6 +98,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get kioskTakeAway => 'À emporter';
 
   @override
+  String get kioskCategoryAll => 'Tout';
+
+  @override
+  String get kioskSearchHint => 'Rechercher un plat';
+
+  @override
+  String get kioskSearchEmpty => 'Aucun plat ne correspond à votre recherche.';
+
+  @override
+  String get kioskSearchClear => 'Effacer';
+
+  @override
   String get kioskSlipHeader => 'TIMMA EATS';
 
   @override

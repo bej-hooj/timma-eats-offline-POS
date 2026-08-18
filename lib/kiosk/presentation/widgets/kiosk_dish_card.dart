@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'package:timma_kiosk/design/app_tokens.dart';
+import '../../catalog/dish_photo_cache.dart';
 import '../../theme/kiosk_scale.dart';
 
 /// One dish, photograph first — **the customer app's card, at kiosk scale.**
@@ -32,6 +35,7 @@ class KioskDishCard extends StatelessWidget {
     required this.soldOut,
     required this.soldOutLabel,
     this.photoUrl,
+    this.photoCache,
     this.onTap,
     super.key,
   });
@@ -41,6 +45,13 @@ class KioskDishCard extends StatelessWidget {
   final bool soldOut;
   final String soldOutLabel;
   final String? photoUrl;
+
+  /// Where the dish photographs live once the menu has been pinned.
+  ///
+  /// Null on a kiosk with no cache configured, which simply means every dish
+  /// falls back to the brand panel — the menu still sells.
+  final DishPhotoCache? photoCache;
+
   final VoidCallback? onTap;
 
   @override
@@ -64,6 +75,7 @@ class KioskDishCard extends StatelessWidget {
                   Expanded(
                     child: _Photo(
                       url: photoUrl,
+                      cache: photoCache,
                       soldOut: soldOut,
                       soldOutLabel: soldOutLabel,
                     ),
@@ -77,19 +89,30 @@ class KioskDishCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text(
-                            name,
-                            // Two lines, where the app's card allows one. Not a
-                            // drift from the app: its text half also carries a
-                            // tag chip and a 48 dp price row and genuinely has
-                            // no room, while the kiosk card's carries a name
-                            // and a price. Spending that slack on the dish's
-                            // full name is the whole point of the screen —
-                            // "Ndolé aux crevettes" must not arrive as
-                            // "Ndolé a…".
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium,
+                          // ⚠ `Flexible`, not a bare `Text`. The card shrinks
+                          // to fit the screen (see `_DishGridMetrics`), and at
+                          // the smallest size two lines of title plus the price
+                          // row overflowed the text half by 3 px — which the
+                          // category strip exposed the moment it took 72 dp off
+                          // the grid. Flexible lets the title give way and
+                          // ellipsize instead; the price never does, because a
+                          // dish with no visible price is the one thing this
+                          // card must never be.
+                          Flexible(
+                            child: Text(
+                              name,
+                              // Two lines, where the app's card allows one. Not a
+                              // drift from the app: its text half also carries a
+                              // tag chip and a 48 dp price row and genuinely has
+                              // no room, while the kiosk card's carries a name
+                              // and a price. Spending that slack on the dish's
+                              // full name is the whole point of the screen —
+                              // "Ndolé aux crevettes" must not arrive as
+                              // "Ndolé a…".
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium,
+                            ),
                           ),
                           const Spacer(),
                           Text(
@@ -117,11 +140,13 @@ class KioskDishCard extends StatelessWidget {
 class _Photo extends StatelessWidget {
   const _Photo({
     required this.url,
+    required this.cache,
     required this.soldOut,
     required this.soldOutLabel,
   });
 
   final String? url;
+  final DishPhotoCache? cache;
   final bool soldOut;
   final String soldOutLabel;
 
@@ -141,13 +166,18 @@ class _Photo extends StatelessWidget {
         ),
       ),
     );
-    final Widget photo = url == null || url!.isEmpty
-        ? fallback
-        : Image.network(
-            url!,
-            fit: BoxFit.cover,
-            errorBuilder: (BuildContext _, Object _, StackTrace? _) => fallback,
-          );
+    // **Disk first, network second, brand panel last.**
+    //
+    // The cached copy is what makes the menu survive the outage it was
+    // downloaded for: `Image.network` alone turned every dish into a grey panel
+    // the moment the line dropped. `Image.memory` renders synchronously from
+    // bytes already in hand, so a cached menu paints on the first frame with no
+    // flicker through the fallback.
+    //
+    // The network branch remains for the window between a dish appearing in the
+    // catalogue and the next warming pass finishing — online only, by
+    // definition, and it degrades to the panel like everything else.
+    final Widget photo = _build(fallback);
     if (!soldOut) {
       return photo;
     }
@@ -181,6 +211,34 @@ class _Photo extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Resolves the three sources in order, without ever throwing into a menu.
+  Widget _build(Widget fallback) {
+    final String? source = url;
+    if (source == null || source.isEmpty) {
+      return fallback;
+    }
+    final Uint8List? cached = cache?.readSync(source);
+    if (cached != null) {
+      return Image.memory(
+        cached,
+        fit: BoxFit.cover,
+        // A corrupt cached file is a decoding failure, not a crash.
+        errorBuilder: (BuildContext _, Object _, StackTrace? _) => fallback,
+      );
+    }
+    // Not cached yet. A cache that refuses this URL outright (not https, or not
+    // the configured host) must not be bypassed by the network branch, or the
+    // rule would hold only until the first cache miss.
+    if (cache != null && !cache!.isAllowed(source)) {
+      return fallback;
+    }
+    return Image.network(
+      source,
+      fit: BoxFit.cover,
+      errorBuilder: (BuildContext _, Object _, StackTrace? _) => fallback,
     );
   }
 }

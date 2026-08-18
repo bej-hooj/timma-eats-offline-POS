@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,9 +9,15 @@ import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
 import 'package:pos_link_flutter/pos_link_flutter.dart';
 
+import 'package:pos_cloud/pos_cloud.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:timma_kiosk/design/time_util.dart';
+import 'kiosk/catalog/cloud_catalog.dart';
+import 'kiosk/catalog/dish_photo_cache.dart';
 import 'kiosk/hub/collection_secret_owner.dart';
 import 'kiosk/hub/dev_provisioning.dart';
+import 'kiosk/hub/device_key_vault.dart';
 import 'kiosk/kiosk_app.dart';
 import 'kiosk/printing/print_queue.dart';
 import 'kiosk/printing/socket_printer.dart';
@@ -81,18 +88,170 @@ Future<void> main() async {
     return;
   }
 
+  final PosEngine engine = PosEngine(store: store, identity: identity);
+
+  // The dashboard's catalogue, if this tablet is credentialed for it. Building
+  // it cannot fail the launch: `_cloudCatalog` returns null for every
+  // misconfiguration and the kiosk sells the menu already on disk.
+  final DishPhotoCache? photos = await _photoCache(dir);
+  final KioskCloudCatalog? catalog = await _cloudCatalog(
+    store: store,
+    engine: engine,
+    identity: identity,
+    photos: photos,
+  );
+
   runApp(
     ProviderScope(
       overrides: [
-        kioskEngineProvider.overrideWithValue(
-          PosEngine(store: store, identity: identity),
-        ),
+        kioskEngineProvider.overrideWithValue(engine),
         kioskCollectionSecretProvider.overrideWithValue(secret),
         kioskPrintQueueProvider.overrideWithValue(_printQueue()),
+        kioskPhotoCacheProvider.overrideWithValue(photos),
       ],
       child: const KioskApp(),
     ),
   );
+
+  // ⚠ **After `runApp`, deliberately.** The customer gets the menu that is
+  // already pinned on this tablet on the first frame; the dashboard's version
+  // arrives behind them. A kiosk that waited on the network before drawing
+  // would be a kiosk with a blank screen every time the shop's line is slow —
+  // which is the failure §23 exists to prevent.
+  unawaited(catalog?.start());
+}
+
+/// Where dish photographs live, or null when this build has no cloud host to
+/// trust.
+///
+/// The host is derived from the configured Supabase URL rather than configured
+/// separately: two sources for "which server is ours" is one source too many,
+/// and the wrong one would eventually be the one edited.
+Future<DishPhotoCache?> _photoCache(Directory documents) async {
+  final Uri? supabase = _supabaseUri();
+  if (supabase == null) {
+    return null;
+  }
+  final Directory dir = Directory('${documents.path}/dish_photos');
+  final DishPhotoCache cache = DishPhotoCache(
+    directory: dir,
+    allowedHost: supabase.host,
+  );
+  return cache;
+}
+
+/// Composes the cloud catalogue, or returns null when anything it needs is
+/// missing.
+///
+/// Null is the ordinary state of an unprovisioned tablet, not an error: the
+/// kiosk still opens, still sells, still prints. Only the dashboard's menu is
+/// absent, and only until someone provisions the device.
+Future<KioskCloudCatalog?> _cloudCatalog({
+  required PosStore store,
+  required PosEngine engine,
+  required PosDeviceIdentity identity,
+  required DishPhotoCache? photos,
+}) async {
+  if (photos == null) {
+    return null;
+  }
+  // With no cloud credential the catalogue still runs, photo-only: whatever
+  // menu is pinned on this tablet gets its pictures onto the disk. Skipping
+  // that would leave a seeded or previously-synced kiosk with a grid of grey
+  // panels the first time the line drops.
+  KioskCloudCatalog photosOnly() =>
+      KioskCloudCatalog(sync: null, store: store, photos: photos);
+
+  final Uri? url = _supabaseUri();
+  const String anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  if (url == null || anonKey.isEmpty) {
+    return photosOnly();
+  }
+
+  // The device key is read from the platform keystore. A `--dart-define` is
+  // accepted ONCE, to provision a tablet, and never read again after that —
+  // see `KioskDeviceKeyVault`.
+  const String provisioningKey = String.fromEnvironment('KIOSK_DEVICE_KEY');
+  final String? deviceKey = await KioskDeviceKeyVault.platform()
+      .provisionIfAbsent(provisioningKey.isEmpty ? null : provisioningKey);
+  if (deviceKey == null) {
+    debugPrint(
+      '[KioskCatalog] no device key — pinned menu only, photos still cached',
+    );
+    return photosOnly();
+  }
+
+  try {
+    // `publishableKey`, not the deprecated `anonKey` parameter — the value
+    // itself is whatever this build was configured with, and Supabase accepts
+    // both an anon JWT and a publishable key in this slot.
+    await Supabase.initialize(url: url.toString(), publishableKey: anonKey);
+  } on Object {
+    // Already initialised, or a malformed URL. Neither is worth a blank screen.
+    debugPrint('[KioskCatalog] cloud client unavailable');
+    return photosOnly();
+  }
+
+  final PosCloudGateway gateway = SupabasePosCloudGateway(
+    Supabase.instance.client,
+  );
+  return KioskCloudCatalog(
+    store: store,
+    photos: photos,
+    sync: PosCloudSync(
+      store: store,
+      branchId: identity.branchId,
+      drain: OutboxDrain(
+        store: store,
+        sink: PosCloudSink(
+          store: store,
+          gateway: gateway,
+          deviceKey: deviceKey,
+        ),
+        // What the server minted for an order it accepted — `order_id`,
+        // `order_code`, `daily_code` — comes back down here. Without this the
+        // local row keeps only its offline ticket number and never learns the
+        // order's cloud identity.
+        onServerFields:
+            (OutboxEnvelope envelope, Map<String, Object?> fields) =>
+                engine.acknowledge(envelope.subject, fields),
+      ),
+      feed: OrderFeedPoller(
+        store: store,
+        engine: engine,
+        gateway: gateway,
+        deviceKey: deviceKey,
+      ),
+      heartbeat: PosHeartbeat(gateway: gateway, deviceKey: deviceKey),
+      menuSource: SupabaseMenuSnapshotSource(
+        gateway: gateway,
+        deviceKey: deviceKey,
+      ),
+      onError: (Object _) {
+        // Counted, never printed: a cloud error can carry a request URL, and a
+        // request URL can carry a device key.
+        debugPrint('[KioskCatalog] a sync tick failed');
+      },
+    ),
+  );
+}
+
+/// The configured Supabase origin, validated.
+///
+/// **https only.** The kiosk sends a device key on every RPC; a plaintext
+/// origin would put it on the shop's wifi in clear. A build configured with
+/// `http://` gets no cloud at all rather than a downgraded one.
+Uri? _supabaseUri() {
+  const String raw = String.fromEnvironment('SUPABASE_URL');
+  if (raw.isEmpty) {
+    return null;
+  }
+  final Uri? uri = Uri.tryParse(raw);
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+    debugPrint('[KioskCatalog] refusing a non-https SUPABASE_URL');
+    return null;
+  }
+  return uri;
 }
 
 /// The counter printer, or null when this build was given no printer address.

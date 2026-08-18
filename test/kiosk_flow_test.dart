@@ -315,20 +315,51 @@ void main() {
 
   group('the kiosk collects nothing about the customer', () {
     testWidgets('no PII field exists anywhere on the path', (tester) async {
+      // The rule is **the kiosk collects nothing about the customer** — no
+      // name, no phone, no email, no loyalty number. It is NOT "no text field
+      // exists": the menu has a dish search, which asks about the food and not
+      // about the person typing.
+      //
+      // So the assertion is on what a field could capture. A search box with a
+      // text keyboard and no autofill hint cannot become a phone number field
+      // by accident, and if one ever is added this test fails on its keyboard
+      // type rather than on its existence.
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));
       await tester.pumpAndSettle();
-      expect(find.byType(TextField), findsNothing);
-      expect(find.byType(TextFormField), findsNothing);
+
+      void expectNoPiiFields() {
+        expect(find.byType(TextFormField), findsNothing);
+        for (final TextField field in tester.widgetList<TextField>(
+          find.byType(TextField),
+        )) {
+          expect(
+            field.keyboardType,
+            isNot(TextInputType.phone),
+            reason: 'a phone keypad on a kiosk is a phone number being asked for',
+          );
+          expect(field.keyboardType, isNot(TextInputType.emailAddress));
+          expect(field.keyboardType, isNot(TextInputType.name));
+          expect(
+            field.autofillHints,
+            anyOf(isNull, isEmpty),
+            reason: 'an autofill hint is the platform being told what personal '
+                'value belongs here',
+          );
+          expect(
+            field.obscureText,
+            isFalse,
+            reason: 'nothing on this screen is a secret being typed',
+          );
+        }
+      }
+
+      expectNoPiiFields();
 
       await tester.tap(find.text('Poulet DG'));
       await tester.pumpAndSettle();
-      expect(
-        find.byType(TextField),
-        findsNothing,
-        reason: 'the screen faces the room; there is nothing to type into it',
-      );
+      expectNoPiiFields();
 
       // And nothing on the placed order carries a customer either.
       final PosOrder? order = store.allOrders().firstOrNull;

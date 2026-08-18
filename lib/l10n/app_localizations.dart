@@ -260,6 +260,30 @@ abstract class AppLocalizations {
   /// **'À emporter'**
   String get kioskTakeAway;
 
+  /// No description provided for @kioskCategoryAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout'**
+  String get kioskCategoryAll;
+
+  /// No description provided for @kioskSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un plat'**
+  String get kioskSearchHint;
+
+  /// No description provided for @kioskSearchEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun plat ne correspond à votre recherche.'**
+  String get kioskSearchEmpty;
+
+  /// No description provided for @kioskSearchClear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer'**
+  String get kioskSearchClear;
+
   /// No description provided for @kioskSlipHeader.
   ///
   /// In fr, this message translates to:

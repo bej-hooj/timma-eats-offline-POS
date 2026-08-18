@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/kiosk/presentation/menu_screen.dart';
+import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_category_pill.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_dish_card.dart';
 import 'package:timma_kiosk/kiosk/theme/kiosk_theme.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
@@ -20,6 +21,7 @@ import 'package:timma_kiosk/l10n/app_localizations.dart';
 /// Every case here runs in **French**, at real device widths, and asserts the
 /// price is on screen rather than merely in the widget tree.
 void main() {
+  _searchAndFilter();
   MenuSnapshot menu() {
     const List<SnapshotProduct> products = <SnapshotProduct>[
       SnapshotProduct(
@@ -182,7 +184,21 @@ void main() {
     await tester.pumpAndSettle();
 
     // Scroll the sold-out dish into view if the row does not reach it.
-    await tester.scrollUntilVisible(find.text('Koki de haricots'), 200);
+    //
+    // The scrollable is named explicitly: the search field introduced a second
+    // one, and `scrollUntilVisible` throws "Too many elements" rather than
+    // guessing — which is the right behaviour and a useful reminder that the
+    // grid is the thing being scrolled here.
+    await tester.scrollUntilVisible(
+      find.text('Koki de haricots'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(GridView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     final KioskDishCard card = tester.widget<KioskDishCard>(
       find.ancestor(
         of: find.text('Koki de haricots'),
@@ -194,5 +210,194 @@ void main() {
       isNull,
       reason: 'sold out is a barrier, not a badge (§K4 rule 4)',
     );
+  });
+}
+
+/// The search box and the category strip — "Notre carte" behaving like the
+/// customer app's menu view (owner, 2026-08-17).
+void _searchAndFilter() {
+  MenuSnapshot menuWithCategories() {
+    const List<SnapshotCategory> categories = <SnapshotCategory>[
+      SnapshotCategory(
+        categoryId: 'c-plats',
+        nameFr: 'Plats',
+        nameEn: 'Dishes',
+        sortIndex: 1,
+      ),
+      SnapshotCategory(
+        categoryId: 'c-boissons',
+        nameFr: 'Boissons',
+        nameEn: 'Drinks',
+        sortIndex: 2,
+      ),
+      SnapshotCategory(
+        categoryId: 'c-vide',
+        nameFr: 'Desserts',
+        nameEn: 'Desserts',
+        sortIndex: 3,
+      ),
+    ];
+    const List<SnapshotProduct> products = <SnapshotProduct>[
+      SnapshotProduct(
+        productId: 'p-ndole',
+        nameFr: 'Ndolé aux crevettes',
+        nameEn: 'Ndole with prawns',
+        basePrice: 3500,
+        type: 'dish',
+        available: true,
+        categoryId: 'c-plats',
+      ),
+      SnapshotProduct(
+        productId: 'p-jus',
+        nameFr: 'Jus de foléré',
+        nameEn: 'Hibiscus juice',
+        basePrice: 1000,
+        type: 'drink',
+        available: true,
+        sortIndex: 1,
+        categoryId: 'c-boissons',
+      ),
+    ];
+    const MenuSnapshot draft = MenuSnapshot(
+      version: 2,
+      branchId: 'branch-1',
+      declaredProductCount: 2,
+      products: products,
+      categories: categories,
+      checksum: '',
+    );
+    return MenuSnapshot(
+      version: draft.version,
+      branchId: draft.branchId,
+      declaredProductCount: draft.declaredProductCount,
+      products: draft.products,
+      categories: draft.categories,
+      checksum: draft.computeChecksum(),
+    );
+  }
+
+  Widget app(MenuSnapshot menu) => MaterialApp(
+    locale: const Locale('fr'),
+    theme: KioskTheme.build(),
+    localizationsDelegates: const <LocalizationsDelegate<Object>>[
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(
+      body: KioskMenuScreen(
+        menu: menu,
+        onPick: (SnapshotProduct _) {},
+        onToggleLanguage: () {},
+      ),
+    ),
+  );
+
+  Future<void> pump(WidgetTester tester, MenuSnapshot menu) async {
+    tester.view.physicalSize = const Size(2280, 1080);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(app(menu));
+    await tester.pumpAndSettle();
+  }
+
+  group('search and filter', () {
+    testWidgets('typing narrows the grid, accents and case ignored', (
+      tester,
+    ) async {
+      await pump(tester, menuWithCategories());
+      expect(find.text('Ndolé aux crevettes'), findsOneWidget);
+      expect(find.text('Jus de foléré'), findsOneWidget);
+
+      // "NDOLE" — no accent, wrong case. A customer in a queue types like this.
+      await tester.enterText(find.byType(TextField), 'NDOLE');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ndolé aux crevettes'), findsOneWidget);
+      expect(find.text('Jus de foléré'), findsNothing);
+    });
+
+    testWidgets('a search with no hits explains itself and offers a way back', (
+      tester,
+    ) async {
+      await pump(tester, menuWithCategories());
+      await tester.enterText(find.byType(TextField), 'pizza');
+      await tester.pumpAndSettle();
+
+      // "It just shows nothing" is a bug (§13.2): an empty filtered grid reads
+      // as a closed kitchen.
+      expect(
+        find.text('Aucun plat ne correspond à votre recherche.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Effacer'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ndolé aux crevettes'), findsOneWidget);
+    });
+
+    testWidgets('a category pill filters in place, and Tout restores', (
+      tester,
+    ) async {
+      await pump(tester, menuWithCategories());
+      expect(find.text('Tout'), findsOneWidget);
+
+      await tester.tap(find.text('Boissons'));
+      await tester.pumpAndSettle();
+      expect(find.text('Jus de foléré'), findsOneWidget);
+      expect(find.text('Ndolé aux crevettes'), findsNothing);
+
+      await tester.tap(find.text('Tout'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ndolé aux crevettes'), findsOneWidget);
+    });
+
+    testWidgets('a category nobody cooks here never gets a pill', (
+      tester,
+    ) async {
+      await pump(tester, menuWithCategories());
+      expect(
+        find.text('Desserts'),
+        findsNothing,
+        reason: 'no product uses it, so the pill would filter to an empty grid',
+      );
+    });
+
+    testWidgets('a bundle with no categories shows no strip at all', (
+      tester,
+    ) async {
+      // What a server that predates the categories field returns. The menu must
+      // look exactly as it did before, not carry an empty rail.
+      const MenuSnapshot draft = MenuSnapshot(
+        version: 3,
+        branchId: 'branch-1',
+        declaredProductCount: 1,
+        products: <SnapshotProduct>[
+          SnapshotProduct(
+            productId: 'p-1',
+            nameFr: 'Poulet DG',
+            nameEn: 'Chicken DG',
+            basePrice: 4500,
+            type: 'dish',
+            available: true,
+          ),
+        ],
+        checksum: '',
+      );
+      await pump(
+        tester,
+        MenuSnapshot(
+          version: draft.version,
+          branchId: draft.branchId,
+          declaredProductCount: draft.declaredProductCount,
+          products: draft.products,
+          checksum: draft.computeChecksum(),
+        ),
+      );
+
+      expect(find.byType(KioskCategoryPill), findsNothing);
+      expect(find.text('Poulet DG'), findsOneWidget);
+    });
   });
 }

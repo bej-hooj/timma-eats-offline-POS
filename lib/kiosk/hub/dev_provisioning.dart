@@ -77,6 +77,12 @@ abstract final class KioskDevProvisioning {
     if (!seedMenu || store.activeSnapshot() != null) {
       return;
     }
+    // The photo URLs are the REAL ones the dashboard publishes, from the public
+    // `catalog` bucket. The prices are not real (hence the ribbon), but the
+    // picture path has to be exercised against the real storage host or the
+    // proof proves nothing: a fake URL would only ever test the fallback.
+    const String bucket =
+        'https://lsjwcleesyplevpmqdjt.supabase.co/storage/v1/object/public/catalog/dishes';
     const List<SnapshotProduct> products = <SnapshotProduct>[
       SnapshotProduct(
         productId: 'dev-poulet',
@@ -85,6 +91,7 @@ abstract final class KioskDevProvisioning {
         basePrice: 4500,
         type: 'dish',
         available: true,
+        photoUrl: '$bucket/poulet-dg.webp',
       ),
       SnapshotProduct(
         productId: 'dev-poisson',
@@ -94,6 +101,7 @@ abstract final class KioskDevProvisioning {
         type: 'dish',
         available: true,
         sortIndex: 1,
+        photoUrl: '$bucket/poisson-braise.webp',
       ),
       SnapshotProduct(
         productId: 'dev-ndole',
@@ -103,6 +111,7 @@ abstract final class KioskDevProvisioning {
         type: 'dish',
         available: true,
         sortIndex: 2,
+        photoUrl: '$bucket/ndole-miondo.webp',
       ),
       SnapshotProduct(
         productId: 'dev-eru',

@@ -264,6 +264,7 @@ class _MenuWithCartBar extends ConsumerWidget {
             menu: menu,
             onPick: onPick,
             onToggleLanguage: ref.read(kioskLocaleProvider.notifier).toggle,
+            photoCache: ref.watch(kioskPhotoCacheProvider),
           ),
         ),
         if (!cart.isEmpty)

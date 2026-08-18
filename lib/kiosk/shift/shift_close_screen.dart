@@ -37,10 +37,7 @@ class ShiftCloseScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                l10n.shiftCloseTitle,
-                style: theme.textTheme.headlineLarge,
-              ),
+              Text(l10n.shiftCloseTitle, style: theme.textTheme.headlineLarge),
               const SizedBox(height: KioskScale.gapLg),
               Expanded(
                 child: ListView(
@@ -57,9 +54,7 @@ class ShiftCloseScreen extends StatelessWidget {
                     if (report.untenderedTotal > 0)
                       _Figure(
                         label: l10n.shiftCloseUntendered,
-                        value: MoneyFormatter.formatXaf(
-                          report.untenderedTotal,
-                        ),
+                        value: MoneyFormatter.formatXaf(report.untenderedTotal),
                         warn: true,
                       ),
                     const Divider(height: KioskScale.gapXl),

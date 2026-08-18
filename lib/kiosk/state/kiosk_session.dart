@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
 
+import '../catalog/dish_photo_cache.dart';
 import '../printing/print_queue.dart';
 import '../printing/slip.dart';
 import 'kiosk_cart.dart';
@@ -343,6 +344,15 @@ final Provider<PosEngine> kioskEngineProvider = Provider<PosEngine>(
 /// every slip already in a customer's hand.
 final Provider<BranchCollectionSecret?> kioskCollectionSecretProvider =
     Provider<BranchCollectionSecret?>((Ref ref) => null);
+
+/// The dish photographs on disk, or null on a kiosk with no cache configured.
+///
+/// Overridden at the shell with a cache rooted in app-private storage. It is
+/// deliberately a plain value rather than something the menu screen builds: the
+/// same instance warms on every menu pin and reads on every frame, and two
+/// caches over one directory would race each other's writes.
+final Provider<DishPhotoCache?> kioskPhotoCacheProvider =
+    Provider<DishPhotoCache?>((Ref ref) => null);
 
 /// The kiosk's print queue, or null when no printer is provisioned.
 ///

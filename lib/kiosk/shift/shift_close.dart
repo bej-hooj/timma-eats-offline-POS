@@ -139,8 +139,9 @@ abstract final class ShiftClose {
   static List<StrandedTicket> _stranded(PosStore store, List<PosOrder> orders) {
     final List<StrandedTicket> out = <StrandedTicket>[];
     for (final PosOrder order in orders) {
-      for (final OutboxEnvelope envelope
-          in store.envelopesForSubject(order.clientId)) {
+      for (final OutboxEnvelope envelope in store.envelopesForSubject(
+        order.clientId,
+      )) {
         if (envelope.state == EnvelopeState.done) {
           continue;
         }

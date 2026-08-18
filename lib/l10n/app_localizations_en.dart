@@ -97,6 +97,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kioskTakeAway => 'Take away';
 
   @override
+  String get kioskCategoryAll => 'All';
+
+  @override
+  String get kioskSearchHint => 'Search for a dish';
+
+  @override
+  String get kioskSearchEmpty => 'No dish matches your search.';
+
+  @override
+  String get kioskSearchClear => 'Clear';
+
+  @override
   String get kioskSlipHeader => 'TIMMA EATS';
 
   @override

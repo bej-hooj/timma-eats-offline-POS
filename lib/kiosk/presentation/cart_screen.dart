@@ -181,8 +181,7 @@ class _CartRow extends StatelessWidget {
                   Text(name, style: theme.textTheme.titleLarge),
                   if (extras.isNotEmpty) ...<Widget>[
                     const SizedBox(height: KioskScale.gap),
-                    Text(extras.join(' · '),
-                        style: theme.textTheme.labelLarge),
+                    Text(extras.join(' · '), style: theme.textTheme.labelLarge),
                   ],
                 ],
               ),
@@ -197,10 +196,11 @@ class _CartRow extends StatelessWidget {
               ),
             ),
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: KioskScale.gapMd),
-              child: Text('${item.quantity}',
-                  style: theme.textTheme.titleLarge),
+              padding: const EdgeInsets.symmetric(horizontal: KioskScale.gapMd),
+              child: Text(
+                '${item.quantity}',
+                style: theme.textTheme.titleLarge,
+              ),
             ),
             IconButton.outlined(
               iconSize: 32,
