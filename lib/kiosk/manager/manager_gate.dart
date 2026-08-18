@@ -32,20 +32,27 @@ abstract final class KioskManagerGate {
     final bool? ok = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (BuildContext context) => const _PinDialog(),
+      builder: (BuildContext context) => const KioskManagerPinDialog(),
     );
     return ok ?? false;
   }
 }
 
-class _PinDialog extends StatefulWidget {
-  const _PinDialog();
+/// The keypad itself, **public on purpose**.
+///
+/// [KioskManagerGate.unlock] returns immediately when a build carries no
+/// `KIOSK_MANAGER_PIN`, which is every test build — so a test that went through
+/// the gate never saw a dialog at all, and the geometry of the one door into
+/// the manager screen could only be checked by looking at a tablet. It has
+/// overflowed twice for exactly that reason.
+class KioskManagerPinDialog extends StatefulWidget {
+  const KioskManagerPinDialog({super.key});
 
   @override
-  State<_PinDialog> createState() => _PinDialogState();
+  State<KioskManagerPinDialog> createState() => _KioskManagerPinDialogState();
 }
 
-class _PinDialogState extends State<_PinDialog> {
+class _KioskManagerPinDialogState extends State<KioskManagerPinDialog> {
   final TextEditingController _entry = TextEditingController();
   bool _wrong = false;
 
@@ -74,62 +81,81 @@ class _PinDialogState extends State<_PinDialog> {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
 
-    return AlertDialog(
-      // ⚠ Scrollable, and the title is compact. In landscape on a phone-sized
-      // kiosk the software keyboard takes half the screen: the first version of
-      // this dialog overflowed by 88 px and hid its own PIN field, which is as
-      // good as no way in at all.
-      scrollable: true,
+    return Dialog(
+      // ⚠ **Not `AlertDialog`, and not `scrollable: true`.** That combination
+      // scrolls the title and content but lays the actions out *below* the
+      // scroll view, so on a short landscape screen with the keyboard up the
+      // buttons still had nowhere to go: the dialog overflowed by 77 px and
+      // drew *Annuler* and *Ouvrir* on top of the PIN field — a door with the
+      // handle painted over the keyhole. Scrolling the WHOLE dialog, actions
+      // included, is what makes it fit at any height.
       insetPadding: const EdgeInsets.symmetric(
         horizontal: KioskScale.gapXl,
         vertical: KioskScale.gap,
       ),
-      titlePadding: const EdgeInsets.fromLTRB(
-        KioskScale.gapMd,
-        KioskScale.gapMd,
-        KioskScale.gapMd,
-        KioskScale.gap,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: KioskScale.gapMd),
-      title: Text(l10n.kioskManagerPinTitle, style: theme.textTheme.titleLarge),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          TextField(
-            controller: _entry,
-            autofocus: true,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(8),
-            ],
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: KioskScale.bodySize,
-              letterSpacing: 6,
-            ),
-            decoration: const InputDecoration(counterText: ''),
-            onSubmitted: (_) => _submit(),
-          ),
-          if (_wrong) ...<Widget>[
-            const SizedBox(height: KioskScale.gap),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(KioskScale.gapMd),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
             Text(
-              l10n.kioskManagerPinWrong,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.error,
+              l10n.kioskManagerPinTitle,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: KioskScale.gapMd),
+            TextField(
+              controller: _entry,
+              autofocus: true,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(8),
+              ],
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: KioskScale.bodySize,
+                letterSpacing: 6,
               ),
+              decoration: const InputDecoration(counterText: ''),
+              onSubmitted: (_) => _submit(),
+            ),
+            if (_wrong) ...<Widget>[
+              const SizedBox(height: KioskScale.gap),
+              Text(
+                l10n.kioskManagerPinWrong,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+            const SizedBox(height: KioskScale.gapMd),
+            Row(
+              children: <Widget>[
+                // Expanded on both, because the kiosk theme gives buttons an
+                // infinite `minimumSize` width — right for a full-width card
+                // action, an unbounded-width crash inside a Row.
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(l10n.kioskCancel),
+                  ),
+                ),
+                const SizedBox(width: KioskScale.gap),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _submit,
+                    child: Text(l10n.kioskManagerPinOpen),
+                  ),
+                ),
+              ],
             ),
           ],
-        ],
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(l10n.kioskCancel),
         ),
-        FilledButton(onPressed: _submit, child: Text(l10n.kioskManagerPinOpen)),
-      ],
+      ),
     );
   }
 }
