@@ -182,3 +182,53 @@ Adding a row costs nothing and is reversible with one `active = false`.
    separate production decision; it is DDL and is not bundled with the key.
 3. Watch `[KioskCatalog]` in logcat: `no device key` must become a snapshot
    version, and photos must still report `reused` (offline-first intact).
+
+### S7 result — the key works; the client parse does not
+
+**Done and verified server-side.** A new kiosk row was INSERTed for the Samsung
+(`f852570f-6d02-4835-8faf-3f8f5b7f8c4a`, additive — the 2026-08-15 row is
+untouched and still active). Calling `rpc_menu_snapshot` with the new plaintext
+returns the **real menu**: real dishes (*Jus de foléré*, *Poulet DG*), real
+prices, real `photo_url`s under the `catalog` bucket, and a `category_id` on
+every product. `device_unknown` is returned for a wrong key, as designed.
+
+The key itself is in the session's scratchpad, not in git. It must be recorded
+in `docs/setup-config.md` (gitignored) and re-passed as
+`--dart-define=KIOSK_DEVICE_KEY=…` on every borne build.
+
+**On the device the ribbon's cause is gone** — `[KioskCatalog] no device key`
+no longer appears, Supabase initialises, and the sync is attempted. It then
+logs `[KioskCatalog] a sync tick failed`, and that error is **deliberately
+swallowed** ("a cloud error can carry a request URL, and a request URL can
+carry a device key"). So the remaining work is client-side parsing, not auth.
+
+**Two concrete suspects, in order:**
+
+1. **The bundle carries `category_id` but no `categories` array.**
+   `20260818100000_kiosk_snapshot_categories.sql` is committed and **not
+   applied**, so the snapshot names no categories. That alone explains the
+   missing filter strip, and it may also fail `MenuSnapshot.validate()` if a
+   product references a category the bundle does not define.
+2. **`type` is `simple` / `composed`** in the live data, where the seed uses
+   `dish` / `drink`. If any client-side switch is exhaustive on those literals
+   the parse throws.
+
+**Next session starts here:** temporarily surface the swallowed error behind a
+debug-only flag (never in release — §11.1), read it once on the Samsung, then
+fix the parse. Do **not** re-issue a device key; one exists and works.
+
+### S8 — dish photographs on the cuisine's tickets (owner, 2026-08-19)
+
+The board renders dish names but no images. `BoardOrder.lines` carries
+`productId`, and the cuisine has no `DishPhotoCache` — the kiosk does. Two
+honest options, to decide before coding:
+
+- **Ship the photo URL on the line.** `PosOrderLine` has no `photoUrl`; adding
+  one is a `pos_core` change and moves both pins. The board would then use the
+  same disk-first `KioskDishThumb` grammar the kiosk uses.
+- **Give the cuisine its own cache** keyed by the branch's active snapshot,
+  warmed at pairing. Heavier, but it survives an outage the same way the
+  kiosk's does — which is the whole premise of this surface.
+
+⚠ Whichever is chosen, a kitchen tablet must never block a ticket on a network
+fetch: disk first, brand panel last, exactly as `KioskDishThumb` already does.
