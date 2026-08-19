@@ -140,3 +140,45 @@ tap anything.
 on the cuisine with its dish lines. The transport itself is proven over a real
 socket in `test/kds_link_test.dart` and was proven live on the emulator pair
 earlier today; what is unproven is only the Samsung's tap path.
+
+## S7 — the catalogue actually refreshes when online (owner: "very important")
+
+### Why it is inert today, exactly
+
+`pos_devices` holds **one** row for branch `10000000-…-0001`:
+`a3c7b786-9d7e-445c-89de-e02dc90a271c`, role `kiosk`, active, created
+2026-08-15 — and only its `key_hash`. The plaintext was never recorded, so no
+build can present it. `rpc_menu_snapshot` matches on
+`key_hash = encode(sha256(convert_to(p_device_key,'UTF8')),'hex')`
+(`20260815120000_kiosk_offline_store.sql:157`), so with no key the call cannot
+be made, `KioskCloudCatalog` falls back to the pinned/seeded menu, and the red
+`DEBUG — MENU D'EXEMPLE · PRIX NON RÉELS` ribbon is the honest consequence.
+The kiosk reads the key from `--dart-define=KIOSK_DEVICE_KEY` and keeps it in
+the platform keystore (`DeviceKeyVault`) from then on.
+
+### The write, stated before it is made
+
+⚠ Production. Owner asked for this on 2026-08-19 ("Very important to fix the
+Catalogue refresh when online").
+
+**Additive, not a rotation.** A new kiosk device row is INSERTed for the
+Samsung; the existing row is left exactly as it is. Overwriting its `key_hash`
+would be the smaller diff but it destroys the only record of a credential
+issued on 2026-08-15 — and a device nobody can identify might still hold it.
+Adding a row costs nothing and is reversible with one `active = false`.
+
+- Key: 32 random bytes, base64url, generated locally, **never committed**.
+- Stored: only `encode(sha256(...),'hex')`, which is all the RPC compares.
+- Recorded for the owner in `docs/setup-config.md` (gitignored) and handed over
+  in the session, per §11.1 — secrets live in the build config, not in git.
+
+### Then
+
+1. Rebuild the borne **without** `KIOSK_DEV_SEED_MENU` and **with**
+   `KIOSK_DEVICE_KEY`, so the seed cannot mask a failed fetch.
+2. Expect: the ribbon **gone**, real dishes, real prices, and — because
+   `20260818100000_kiosk_snapshot_categories.sql` is still **unapplied** — very
+   possibly still no category strip. Applying that migration is a second,
+   separate production decision; it is DDL and is not bundled with the key.
+3. Watch `[KioskCatalog]` in logcat: `no device key` must become a snapshot
+   version, and photos must still report `reused` (offline-first intact).
