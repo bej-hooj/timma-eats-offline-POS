@@ -8,6 +8,7 @@ import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_category_pill.dart'
 import 'package:timma_kiosk/kiosk/presentation/composer_sheet.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_dish_card.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_dish_thumb.dart';
+import 'package:timma_kiosk/kiosk/theme/kiosk_scale.dart';
 import 'package:timma_kiosk/kiosk/theme/kiosk_theme.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 
@@ -230,6 +231,29 @@ void main() {
       findsOneWidget,
       reason: 'the composer shows the dish being decided about',
     );
+    // ⚠ **And it shows it at the size a decision deserves.** A dish with no
+    // variants and no option groups — which is most of TIMMA's menu — used to
+    // render a 72 dp thumbnail, a name, and then an `Expanded` list holding
+    // nothing: two-thirds of a landscape kiosk was blank cream on the screen
+    // where somebody commits to spending money. The photograph now takes the
+    // space the choices are not using.
+    final Size photo = tester.getSize(find.byType(KioskDishThumb));
+    expect(
+      photo.height,
+      greaterThan(KioskScale.minTarget),
+      reason: 'the dish photo fills the space the choices are not using, '
+          'instead of sitting in the corner at one touch target square',
+    );
+    // The width is the assertion that actually says "hero": with nothing to
+    // decide, the dish owns the whole landscape rather than a left column with
+    // a cream void beside it. 868 dp is the Samsung's landscape width.
+    expect(
+      photo.width,
+      greaterThan(868 / 2),
+      reason: 'with no variants and no option groups the dish takes the full '
+          'width — there is no choices column to make room for',
+    );
+
     // ⚠ The composer's action row overflows IN THIS HARNESS ONLY, and the
     // error is consumed deliberately rather than asserted away. It carries
     // "Ajouter  4 500 FCFA", and `flutter_test` substitutes a fixed-width font

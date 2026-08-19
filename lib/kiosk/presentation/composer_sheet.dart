@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pos_core/pos_core.dart';
 
+import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import '../catalog/dish_photo_cache.dart';
@@ -125,48 +126,68 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
     final ThemeData theme = Theme.of(context);
     final bool french = Localizations.localeOf(context).languageCode == 'fr';
 
+    // ⚠ **The empty two-thirds.** The composer used to be a 72 dp thumbnail, a
+    // name, and then an `Expanded` list — which, for a dish with no variants
+    // and no option groups, is *nothing*. Most of TIMMA's menu is exactly that,
+    // so the screen where a customer commits to spending money was a title in
+    // the top-left corner of a blank cream landscape.
+    //
+    // The dish now fills the space it was leaving empty. A kiosk is read at
+    // arm's length by somebody standing up, deciding: the photograph is the
+    // argument, and it should be the biggest thing on the screen.
+    final bool hasChoices =
+        widget.product.variants.isNotEmpty ||
+        widget.product.optionGroups.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.all(KioskScale.gapXl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          // The dish, pictured, at the moment the customer is deciding on it.
-          // The composer showed a bare name: the one screen where somebody is
-          // choosing between plantain and chips had no photograph of either the
-          // dish or anything else.
-          Row(
-            children: <Widget>[
-              KioskDishThumb(
-                photoUrl: widget.product.photoUrl,
-                cache: widget.cache,
-                size: KioskScale.minTarget,
-                radius: KioskScale.gap,
-                iconSize: 28,
-              ),
-              const SizedBox(width: KioskScale.gapMd),
-              Expanded(child: _title(french, theme)),
-            ],
-          ),
-
-          const SizedBox(height: KioskScale.gapLg),
           Expanded(
-            child: ListView(
+            // Landscape, so the split is horizontal: the dish on the left, what
+            // there is to decide on the right. With nothing to decide the dish
+            // takes the whole width rather than leaving a column of cream where
+            // the choices would have been.
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (widget.product.variants.isNotEmpty)
-                  _VariantGroup(
-                    variants: widget.product.variants,
-                    selected: _variant,
+                Expanded(
+                  flex: 5,
+                  child: _DishHero(
+                    product: widget.product,
+                    cache: widget.cache,
                     french: french,
-                    onPick: (SnapshotVariant v) => setState(() => _variant = v),
+                    price: MoneyFormatter.formatXaf(_unitPrice),
+                    title: _title(french, theme),
                   ),
-                for (final SnapshotOptionGroup group
-                    in widget.product.optionGroups)
-                  _OptionGroupBlock(
-                    group: group,
-                    selected: _chosen[group.groupId]!,
-                    french: french,
-                    onToggle: (SnapshotOption o) => _toggle(group, o),
+                ),
+                if (hasChoices) ...<Widget>[
+                  const SizedBox(width: KioskScale.gapXl),
+                  Expanded(
+                    flex: 6,
+                    child: ListView(
+                      children: <Widget>[
+                        if (widget.product.variants.isNotEmpty)
+                          _VariantGroup(
+                            variants: widget.product.variants,
+                            selected: _variant,
+                            french: french,
+                            onPick: (SnapshotVariant v) =>
+                                setState(() => _variant = v),
+                          ),
+                        for (final SnapshotOptionGroup group
+                            in widget.product.optionGroups)
+                          _OptionGroupBlock(
+                            group: group,
+                            selected: _chosen[group.groupId]!,
+                            french: french,
+                            onToggle: (SnapshotOption o) => _toggle(group, o),
+                          ),
+                      ],
+                    ),
                   ),
+                ],
               ],
             ),
           ),
@@ -207,6 +228,63 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The dish itself, at the size a decision deserves.
+///
+/// The photograph takes every point the choices do not, and the name and price
+/// sit under it — one primary thing on the screen, which is the whole of what a
+/// kiosk asks a standing customer to read.
+class _DishHero extends StatelessWidget {
+  const _DishHero({
+    required this.product,
+    required this.cache,
+    required this.french,
+    required this.price,
+    required this.title,
+  });
+
+  final SnapshotProduct product;
+  final DishPhotoCache? cache;
+  final bool french;
+  final String price;
+  final Widget title;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(KioskScale.radiusLg),
+            child: SizedBox.expand(
+              // `size: null` — it fills whatever it is given rather than
+              // carrying a number, so the same widget is a 72 dp cart thumbnail
+              // and a half-screen photograph without a second implementation.
+              child: KioskDishThumb(
+                photoUrl: product.photoUrl,
+                cache: cache,
+                iconSize: 72,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: KioskScale.gapMd),
+        title,
+        const SizedBox(height: KioskScale.gap),
+        Text(
+          price,
+          maxLines: 1,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.primary,
+          ),
+        ),
+      ],
     );
   }
 }

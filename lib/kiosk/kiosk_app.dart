@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
@@ -144,6 +146,20 @@ class _KioskShellState extends ConsumerState<KioskShell> {
         behavior: HitTestBehavior.translucent,
         onPointerDown: (_) => controller.noteActivity(),
         child: Scaffold(
+          // ⚠ **The colour has to go under the cutout, not stop at it.** In
+          // landscape the display cutout takes a strip off one side, `SafeArea`
+          // insets the content past it, and whatever the Scaffold is painted
+          // with shows through — so the brand-green attract and counter screens
+          // each had a pale cream band down one edge, on a screen mounted
+          // facing a room. Painting the Scaffold in the stage's own colour puts
+          // the green behind the cutout, where a full-bleed screen expects it,
+          // and leaves every cream stage exactly as it was.
+          backgroundColor: switch (session.stage) {
+            KioskStage.attract ||
+            KioskStage.counter ||
+            KioskStage.outOfService => Theme.of(context).colorScheme.primary,
+            _ => AppColors.canvas,
+          },
           // ⚠ **The attract screen must not shrink for somebody else's
           // keyboard.** Long-pressing it opens the manager PIN dialog, whose
           // keypad took 263 dp of a 448 dp landscape screen; the Scaffold
