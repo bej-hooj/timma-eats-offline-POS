@@ -118,7 +118,8 @@ Future<void> main() async {
         // announced to nobody. The unit test could not see it — it built one
         // container and overrode at its root, which is the shape that works.
         kioskBoardPublisherProvider.overrideWith(
-          (Ref ref) => () => ref.read(hubProvider.notifier).publishBoard(),
+          (Ref ref) =>
+              () => ref.read(hubProvider.notifier).publishBoard(),
         ),
       ],
       child: const _KioskWithHub(),
@@ -239,10 +240,22 @@ Future<KioskCloudCatalog?> _cloudCatalog({
         gateway: gateway,
         deviceKey: deviceKey,
       ),
-      onError: (Object _) {
-        // Counted, never printed: a cloud error can carry a request URL, and a
-        // request URL can carry a device key.
-        debugPrint('[KioskCatalog] a sync tick failed');
+      onError: (Object error) {
+        // ⚠ The error itself is still never printed: a cloud error can carry a
+        // request URL, and a request URL can carry a device key. But "a sync
+        // tick failed" is unactionable — it cost a session of guessing which of
+        // four RPCs a tick even calls. The exception's TYPE, and a
+        // `PostgrestException`'s `code`, carry no URL and no key, and they are
+        // the difference between a diagnosis and a guess.
+        // `PosError.code` is a stable, redacted identifier from a fixed list
+        // (`PosErrorCodes`) — it names a rule, not a request. `detail` is NOT
+        // printed: it can carry a key name or a value.
+        final String detail = switch (error) {
+          PosError e => 'PosError(${e.code})',
+          PostgrestException e => 'PostgrestException(${e.code ?? '-'})',
+          _ => error.runtimeType.toString(),
+        };
+        debugPrint('[KioskCatalog] a sync tick failed: $detail');
       },
     ),
   );

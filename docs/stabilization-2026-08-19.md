@@ -296,3 +296,49 @@ pairing taps. Watch logcat for `FATAL EXCEPTION`, `E/flutter`, `OVERFLOW`.
 
 Written only after the online path is clean, so the guide describes something
 that has been seen working rather than something intended.
+
+### S9.1 result — two real bugs found, one blocker left, all measured
+
+Naming the error paid for itself immediately. `[KioskCatalog] a sync tick
+failed` became `PosError(snapshot_downgrade)` on the first run.
+
+**Bug 1 — the sample menu poisoned the store permanently.** The seed stamped
+itself `DateTime.now().millisecondsSinceEpoch ~/ 1000`, and the server's version
+is the epoch of the **last dashboard edit** — always in the past (it was
+2026-08-16 16:26). `activateSnapshot` refuses anything at or below the active
+version, so every real fetch came back `snapshot_downgrade`. **A tablet that had
+once run a seeded build could never accept the real menu again**, and the only
+symptom was the DEBUG ribbon staying up. Fixed: the seed is version `1`, the
+lowest a snapshot can carry. A fixture must never be able to beat real data.
+
+**Bug 2 — the swallowed error.** Kept swallowing the error itself (it can carry
+a request URL, and a URL can carry a device key) but the exception's *type*, a
+`PostgrestException`'s `code`, and a `PosError`'s `code` carry neither, and they
+are the difference between a diagnosis and a guess.
+
+**Blocker — `snapshot_checksum_mismatch`, and what is already ruled out.**
+After the downgrade cleared, the device now fails validation. Measured, not
+assumed:
+
+- The **server payload is correct**. Fetched live with a throwaway kiosk key and
+  run through the *pinned* `pos_core` (`tool/snapshot_checksum_probe.dart`):
+  9 products, 3 categories, v1787232333 — **checksums MATCH**, byte for byte.
+  So the applied migration and the Dart model agree, including the categories
+  branch the 2026-08-15 proof never covered.
+- **Not stale local state**: it still fails after an uninstall + clean install.
+- **Not two overloads**: `rpc_menu_snapshot(text,bigint)` is the only one, and
+  its body contains the categories block.
+- **Not `type`**: live values are `simple|composed|combo`; the kiosk never reads
+  `type` anywhere.
+- Product and category key sets match the Dart `toJson()` sets exactly.
+
+So the same bytes validate on the host and fail on the device. The next step is
+**not** more reasoning: wrap `SupabaseMenuSnapshotSource` in the app so that, on
+mismatch, it logs the canonical byte length and the first differing index —
+lengths and offsets, never content. One run then names the field.
+
+⚠ **The borne was left on the seeded menu deliberately.** With no seed and a
+failing fetch it has no menu at all and shows *Borne indisponible — Merci de
+commander directement à la caisse*, which is correct behaviour and an unusable
+kiosk. Seeded, it sells, and the red ribbon is the honest statement that the
+prices are samples.

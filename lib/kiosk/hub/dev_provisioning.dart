@@ -33,6 +33,10 @@ abstract final class KioskDevProvisioning {
   static bool get isConfigured =>
       kDebugMode && branchId.isNotEmpty && deviceId.isNotEmpty;
 
+  /// The sample menu's version. Deliberately the lowest a snapshot can carry,
+  /// so any real bundle from `rpc_menu_snapshot` supersedes it on first fetch.
+  static const int _seedVersion = 1;
+
   /// True when this build was told to pin a **sample** menu.
   ///
   /// The real menu arrives through `pos_cloud`'s snapshot sync. This exists so
@@ -144,7 +148,15 @@ abstract final class KioskDevProvisioning {
       ),
     ];
     final MenuSnapshot draft = MenuSnapshot(
-      version: DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000,
+      // ⚠ **Version 1, never `now()`.** This stamped itself with the current
+      // epoch seconds, and the server's version is the epoch of the last
+      // dashboard edit — always in the past. So the sample menu outranked
+      // production permanently: `activateSnapshot` refuses anything at or below
+      // the active version, and every real fetch came back
+      // `snapshot_downgrade`. A tablet that had once run a seeded build could
+      // never accept the real menu again, and the only symptom was the DEBUG
+      // ribbon staying up. A fixture must never be able to beat real data.
+      version: _seedVersion,
       branchId: branchId,
       declaredProductCount: products.length,
       products: products,

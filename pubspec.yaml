@@ -2,7 +2,7 @@ name: timma_kiosk
 description: >-
   The TIMMA self-order kiosk. A customer-facing tablet at the door that is ALSO the store hub: it holds the shift's truth in SQLite and is the only device that talks to Supabase (ECOSYSTEM §23).
 publish_to: 'none'
-version: 0.4.0+9
+version: 0.4.1+10
 
 environment:
   sdk: ^3.12.2
