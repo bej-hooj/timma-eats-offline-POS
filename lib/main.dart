@@ -24,6 +24,7 @@ import 'kiosk/printing/print_queue.dart';
 import 'kiosk/printing/socket_printer.dart';
 import 'kiosk/presentation/bootstrap_screen.dart';
 import 'kiosk/state/kiosk_session.dart';
+import 'kiosk/catalog/snapshot_checksum_diagnostic.dart';
 
 /// The kiosk's own entrypoint — a **different product on a different device**
 /// from the customer phone app, sharing this repo's design tokens, l10n and
@@ -236,7 +237,11 @@ Future<KioskCloudCatalog?> _cloudCatalog({
         deviceKey: deviceKey,
       ),
       heartbeat: PosHeartbeat(gateway: gateway, deviceKey: deviceKey),
-      menuSource: SupabaseMenuSnapshotSource(
+      // Wrapped so a checksum mismatch says WHICH field it is about. The
+      // wrapper is inert until `validate()` refuses a bundle, and the borne has
+      // been refusing every real catalogue since the categories migration —
+      // selling a seeded sample menu behind a red ribbon in the meantime.
+      menuSource: DiagnosingMenuSnapshotSource(
         gateway: gateway,
         deviceKey: deviceKey,
       ),
