@@ -81,6 +81,27 @@ class HubController extends Notifier<HubState> {
   LanHubServer? _server;
   NsdHubDiscovery? _discovery;
   Timer? _poll;
+  Timer? _addressWatch;
+
+  /// What the socket actually bound to — `0.0.0.0`, every interface. Kept so
+  /// the LAN address can be resolved again later against the same port.
+  HubEndpoint? _bound;
+
+  /// How often the kiosk re-checks its own address on the wifi.
+  ///
+  /// ⚠ **The address is not a constant, and this code used to assume it was.**
+  /// It was resolved once, at start-up, and never again — so when the router
+  /// handed the tablet a new DHCP lease the manager screen went on printing the
+  /// old address and mDNS went on advertising it. A kitchen then dialled an
+  /// address nothing answers, and the borne's own screen was the thing telling
+  /// it to. Seen on the hardware on 2026-08-20: the screen said
+  /// `192.168.1.132` while the tablet was on `192.168.1.245`, and no board
+  /// reached the hub at all until the app was restarted by hand.
+  ///
+  /// Unhurried on purpose — a lease change is rare and this is a syscall — but
+  /// far shorter than the time it takes a manager to walk to the kitchen,
+  /// because until it fires the screen is lying.
+  static const Duration addressWatchEvery = Duration(seconds: 15);
 
   @override
   HubState build() {
@@ -111,7 +132,9 @@ class HubController extends Notifier<HubState> {
       // kitchen: the board kept presenting a credential the hub had never heard
       // of, and a restaurant saw the kiosk asking to pair again while the
       // kitchen insisted it already had.
-      final HubCredentialStore credentials = HubCredentialStore.platform();
+      final HubCredentialStore credentials = ref.read(
+        hubCredentialStoreProvider,
+      );
       await credentials.load();
 
       final LanHubServer server = LanHubServer(
@@ -131,6 +154,7 @@ class HubController extends Notifier<HubState> {
       final HubEndpoint endpoint = await _reachableEndpoint(bound);
 
       _server = server;
+      _bound = bound;
       state = state.copyWith(
         running: true,
         endpoint: endpoint,
@@ -154,6 +178,14 @@ class HubController extends Notifier<HubState> {
           state = state.copyWith(pairedBoards: peers);
         }
       });
+
+      // And the address is re-checked for as long as the hub runs, so a new
+      // lease costs a kitchen fifteen seconds rather than a restart nobody
+      // knows to perform.
+      _addressWatch = Timer.periodic(
+        ref.read(hubAddressWatchProvider),
+        (_) => unawaited(_syncEndpoint(engine.identity)),
+      );
     } on Object {
       state = state.copyWith(error: HubErrorCode.startFailed, running: false);
     }
@@ -170,25 +202,8 @@ class HubController extends Notifier<HubState> {
       return bound;
     }
     try {
-      final List<NetworkInterface> interfaces = await NetworkInterface.list(
-        includeLoopback: false,
-        type: InternetAddressType.IPv4,
-      );
-      final List<String> addresses = <String>[
-        for (final NetworkInterface interface in interfaces)
-          for (final InternetAddress address in interface.addresses)
-            address.address,
-      ];
-      final Iterable<String> usable = addresses.where(
-        (String a) => !a.startsWith('169.254.'),
-      );
-      final String lan = usable.firstWhere(
-        (String a) =>
-            a.startsWith('192.168.') ||
-            a.startsWith('10.') ||
-            a.startsWith('172.'),
-        orElse: () => usable.isEmpty ? '' : usable.first,
-      );
+      final List<String> addresses = await ref.read(lanAddressesProvider)();
+      final String lan = HubLanAddress.pick(addresses);
       if (lan.isNotEmpty) {
         return HubEndpoint(host: lan, port: bound.port);
       }
@@ -198,6 +213,30 @@ class HubController extends Notifier<HubState> {
       debugPrint('[Hub] could not resolve a LAN address');
     }
     return bound;
+  }
+
+  /// Re-resolves this device's address and, if it moved, re-publishes it — on
+  /// the screen a manager reads and in the mDNS record a board discovers.
+  ///
+  /// The advertisement is torn down and raised again rather than edited: an
+  /// mDNS record carries the address inside it, so leaving the old registration
+  /// up would keep pointing boards at an address that has gone.
+  Future<void> _syncEndpoint(PosDeviceIdentity identity) async {
+    final HubEndpoint? bound = _bound;
+    if (_server == null || bound == null) {
+      return;
+    }
+    final HubEndpoint fresh = await _reachableEndpoint(bound);
+    final HubEndpoint? shown = state.endpoint;
+    if (shown != null && fresh.host == shown.host && fresh.port == shown.port) {
+      return;
+    }
+    debugPrint('[Hub] the LAN address moved — re-advertising');
+    state = state.copyWith(endpoint: fresh);
+    final NsdHubDiscovery? stale = _discovery;
+    _discovery = null;
+    await stale?.close();
+    await _advertise(identity, fresh);
   }
 
   Future<void> _advertise(
@@ -258,6 +297,9 @@ class HubController extends Notifier<HubState> {
   Future<void> stop() async {
     _poll?.cancel();
     _poll = null;
+    _addressWatch?.cancel();
+    _addressWatch = null;
+    _bound = null;
     final LanHubServer? server = _server;
     final NsdHubDiscovery? discovery = _discovery;
     _server = null;
@@ -265,6 +307,68 @@ class HubController extends Notifier<HubState> {
     await discovery?.close();
     await server?.close();
   }
+}
+
+/// The hub's keystore-backed credential store.
+///
+/// Behind a provider for the same reason the vaults on the board are: a
+/// platform channel cannot exist on a host, and without a seam the whole of
+/// [HubController.start] — the socket, the advertisement, the address watch —
+/// could only be exercised by hand on a tablet.
+final Provider<HubCredentialStore> hubCredentialStoreProvider =
+    Provider<HubCredentialStore>((Ref ref) => HubCredentialStore.platform());
+
+/// How often [HubController] re-checks its own LAN address. Overridden in tests
+/// so the timer itself is proven, rather than only the method it calls.
+final Provider<Duration> hubAddressWatchProvider = Provider<Duration>(
+  (Ref ref) => HubController.addressWatchEvery,
+);
+
+/// Picks the address a board should dial, out of everything this device has.
+///
+/// Prefers a private-range IPv4 — a restaurant LAN is 192.168/10/172.x — and
+/// falls back to any other non-loopback IPv4. A `169.254` link-local address is
+/// skipped: that means DHCP failed, and nothing else on the wifi can reach this
+/// kiosk anyway, so printing it would send a manager chasing a dead number.
+///
+/// Pure, and separate from the controller, because this is the part with the
+/// rules in it and a rule that can only be exercised by changing a router's
+/// lease is a rule nobody checks again.
+abstract final class HubLanAddress {
+  static String pick(List<String> addresses) {
+    final Iterable<String> usable = addresses.where(
+      (String a) => a.isNotEmpty && !a.startsWith('169.254.'),
+    );
+    if (usable.isEmpty) {
+      return '';
+    }
+    return usable.firstWhere(
+      (String a) =>
+          a.startsWith('192.168.') ||
+          a.startsWith('10.') ||
+          a.startsWith('172.'),
+      orElse: () => usable.first,
+    );
+  }
+}
+
+/// This device's own IPv4 addresses.
+///
+/// Behind a provider so the address-change path can be proven on a host: a test
+/// cannot make a router hand out a new lease, and that path had shipped
+/// unexercised once already.
+final Provider<Future<List<String>> Function()> lanAddressesProvider =
+    Provider<Future<List<String>> Function()>((Ref ref) => _deviceAddresses);
+
+Future<List<String>> _deviceAddresses() async {
+  final List<NetworkInterface> interfaces = await NetworkInterface.list(
+    includeLoopback: false,
+    type: InternetAddressType.IPv4,
+  );
+  return <String>[
+    for (final NetworkInterface interface in interfaces)
+      for (final InternetAddress address in interface.addresses) address.address,
+  ];
 }
 
 final NotifierProvider<HubController, HubState> hubProvider =
