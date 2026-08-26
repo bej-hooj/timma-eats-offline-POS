@@ -152,6 +152,54 @@
 9. **Auditability**: who did what — staff actions on money/status write actor + reason to an audit trail.
 10. **Kill switches**: every externally-driven feature (payments provider, delivery mode, promo engine) has a server-side off switch that doesn't need a release.
 
+### §11.11 Zero Trust Code Generation (owner directive, 2026-08-26)
+
+**Canon lives in `ECOSYSTEM.md` §16.8** (§0.8: a cross-repo rule changes there
+first). This is the working copy every repo carries.
+
+Rules 1–10 above already cover secrets, zero client trust, RLS, webhooks, PII,
+input handling, dependencies, auditability and kill switches. What follows is
+the part that was **not** written down anywhere, stated so it can be checked
+rather than assumed:
+
+1. **Secrets, per platform, named.** Android `EncryptedSharedPreferences` /
+   KeyStore; iOS Keychain Services; public identifiers and endpoints from build
+   configuration (`--dart-define`, `BuildConfig`, `Info.plist`) and never a
+   literal. Server: `env()` only, and never a value that survives
+   `config:cache` into a committed file.
+2. **Hashing: Argon2id or bcrypt** with a real cost factor. Never MD5, SHA-1 or
+   a plain SHA-256 — a fast hash is the wrong tool for a password whatever its
+   output length.
+3. **At rest: AES-256-GCM** for anything sensitive stored locally.
+4. **Transport: HTTPS / TLS 1.3** everywhere; certificate pinning or a platform
+   network-security configuration where a surface warrants it.
+5. **Every entrance is untrusted**, and the list includes the ones that do not
+   look like network I/O: deep links, intent extras, IPC, QR payloads, and **a
+   row an operator typed into the dashboard**. Validation is server-side and
+   typed (`FormRequest`, or a typed parse on a client).
+6. **Parameterised queries only.** No string-concatenated SQL, ever.
+7. **Escape by default** (`{{ }}`). `{!! !!}` requires an explicit allow-list
+   control, and the control must be *checkable* — a comment asserting the input
+   is trusted is not one.
+8. **Authorization is per-resource.** A policy or gate on every route that
+   touches a resource; `Auth::check()` alone is not authorization. CSRF
+   middleware on every state-changing endpoint.
+9. **`$fillable` allow-lists** on every Eloquent model. **Never
+   `protected $guarded = []`.**
+10. **No stack trace, schema or internal path** reaches an end user in
+    production; PII, tokens and card data are redacted from log lines.
+11. **Self-audit against the OWASP Top 10 (API + Web) before shipping.** Where
+    a secure pattern is skipped for brevity, write the production alternative
+    down rather than leaving the gap silent.
+
+⚠ **A protocol nobody has run is decoration.** The first audit (2026-08-26,
+recorded in ECOSYSTEM §16.8-a) found no `$guarded = []` and no concatenated
+SQL — and one real hole, where *measuring beat assuming*: the staff docs render
+through `{!! !!}`, and `Str::markdown` escapes `<script>` and `<iframe>` while
+happily rendering `<img src=x onerror=…>`, `<svg onload=…>` and
+`[x](javascript:…)`. Closed at the converter and by a test that fails the build
+if a docs file grows an event handler. Run the audit; do not assume it.
+
 ## §12. Performance budgets (set at project start; measured, not vibed)
 
 - **App**: cold start → interactive `[< 2.5 s]` on a mid-range Android; primary lists 60 fps (virtualized, `const` widgets, no sync I/O on build); images sized to slot via CDN transforms + cached; payloads paginated (`[≤ 50]` rows/page); cache-first screens render instantly offline.
