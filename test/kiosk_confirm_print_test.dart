@@ -298,6 +298,7 @@ void main() {
       payAtCounter: 'Payez à la caisse',
       total: 'Total',
       takeAway: 'À emporter',
+      without: 'SANS {ingredient}',
     );
 
     final KioskSessionController controller = container.read(
@@ -465,7 +466,8 @@ void main() {
     expect(
       published,
       1,
-      reason: 'exactly one board publish per sale — the kitchen learns of it '
+      reason:
+          'exactly one board publish per sale — the kitchen learns of it '
           'even though this printer never answered',
     );
   });
@@ -570,7 +572,8 @@ void main() {
     expect(
       published,
       0,
-      reason: 'a ticket for an order that does not exist is the worst thing '
+      reason:
+          'a ticket for an order that does not exist is the worst thing '
           'this screen could put in a kitchen',
     );
   });

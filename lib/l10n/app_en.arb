@@ -110,5 +110,13 @@
   "kioskManagerPinTitle": "Manager code",
   "kioskManagerPinWrong": "Wrong code.",
   "kioskManagerPinOpen": "Open",
-  "kioskManagerPinUnset": "No manager code is configured on this kiosk."
+  "kioskManagerPinUnset": "No manager code is configured on this kiosk.",
+  "kioskSlipWithout": "NO {ingredient}",
+  "@kioskSlipWithout": {
+    "placeholders": {
+      "ingredient": {
+        "type": "String"
+      }
+    }
+  }
 }

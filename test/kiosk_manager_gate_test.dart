@@ -97,7 +97,8 @@ void main() {
         expect(
           tester.takeException(),
           isNull,
-          reason: 'the dialog overflowed at ${screen.value} with '
+          reason:
+              'the dialog overflowed at ${screen.value} with '
               '${keyboard.value}dp of keyboard',
         );
 
@@ -125,7 +126,8 @@ void main() {
           expect(
             fullyVisible(control),
             isTrue,
-            reason: 'a control was drawn off screen or under the keyboard: '
+            reason:
+                'a control was drawn off screen or under the keyboard: '
                 '${tester.getRect(control)} outside $visible',
           );
         }

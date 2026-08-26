@@ -226,4 +226,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kioskManagerPinUnset =>
       'No manager code is configured on this kiosk.';
+
+  @override
+  String kioskSlipWithout(String ingredient) {
+    return 'NO $ingredient';
+  }
 }

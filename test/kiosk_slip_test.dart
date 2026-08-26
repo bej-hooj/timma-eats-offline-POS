@@ -136,6 +136,7 @@ void main() {
       payAtCounter: 'Payez en espèces à la caisse',
       total: 'Total',
       takeAway: 'À emporter',
+      without: 'SANS {ingredient}',
     );
 
     List<PosOrderLine> lines() => <PosOrderLine>[
@@ -189,6 +190,107 @@ void main() {
       );
       final Uint8List bytes = build();
       expect(_contains(bytes, utf8.encode(code.payload)), isTrue);
+    });
+
+    test('a removal prints in CAPITALS, bold, on its own line', () {
+      /*
+       * R2 / Stage 3d, and the same rule as the KDS board: a cook reads a
+       * modifier as something to ADD and a removal as something to WITHHOLD.
+       * Paper has no colour to fall back on, so emphasis and word order carry
+       * the whole distinction — bold, capitals, and AFTER the modifiers rather
+       * than mixed among them.
+       *
+       * ⚠ Asserted on the REAL medium: the bytes that reach the printer, in
+       * French, through the same code page that has printed "?" for a
+       * non-breaking space before.
+       */
+      final Uint8List bytes = Slip.build(
+        order: order(),
+        lines: <PosOrderLine>[
+          const PosOrderLine(
+            lineNo: 0,
+            productId: 'p-poulet',
+            nameFr: 'Poulet DG',
+            nameEn: 'Chicken DG',
+            unitPrice: 3500,
+            quantity: 1,
+            lineTotal: 3500,
+            modifiers: <PosLineModifier>[
+              PosLineModifier(
+                optionId: 'o-plantain',
+                nameFr: 'Plantain',
+                nameEn: 'Plantain',
+                priceDelta: 500,
+                quantity: 1,
+              ),
+            ],
+            removedIngredients: <PosRemovedIngredient>[
+              PosRemovedIngredient(
+                id: 'ing-onion',
+                nameFr: 'Oignon',
+                nameEn: 'Onion',
+              ),
+            ],
+          ),
+        ],
+        labels: labels,
+        code: CollectionCode.forOrder(order(), secret: secret),
+        french: true,
+      );
+
+      expect(_contains(bytes, EscPos.text('SANS OIGNON')), isTrue);
+      // The modifier is still there, and still NOT in the same breath.
+      expect(_contains(bytes, EscPos.text('Plantain')), isTrue);
+      expect(
+        _contains(bytes, EscPos.text('Plantain SANS OIGNON')),
+        isFalse,
+        reason: 'a removal joined to a modifier reads as an instruction to add',
+      );
+      // Bold on, then the words. Emphasis is the only signal paper has.
+      expect(
+        _contains(bytes, <int>[
+          ...EscPos.bold(true),
+          ...EscPos.text('   SANS'),
+        ]),
+        isTrue,
+      );
+    });
+
+    test('an accented removal survives the code page too', () {
+      // "Piment frais" is fine; "Céleri" is the one that turns into "C?leri"
+      // if a removal ever bypasses the shared text encoder.
+      final Uint8List bytes = Slip.build(
+        order: order(),
+        lines: <PosOrderLine>[
+          const PosOrderLine(
+            lineNo: 0,
+            productId: 'p-koki',
+            nameFr: 'Koki',
+            nameEn: 'Koki',
+            unitPrice: 2000,
+            quantity: 1,
+            lineTotal: 2000,
+            removedIngredients: <PosRemovedIngredient>[
+              PosRemovedIngredient(
+                id: 'ing-celery',
+                nameFr: 'Céleri',
+                nameEn: 'Celery',
+              ),
+            ],
+          ),
+        ],
+        labels: labels,
+        code: CollectionCode.forOrder(order(), secret: secret),
+        french: true,
+      );
+
+      expect(_contains(bytes, EscPos.text('SANS CÉLERI')), isTrue);
+    });
+
+    test('a line with nothing removed prints no extra row', () {
+      final Uint8List bytes = build();
+
+      expect(_contains(bytes, EscPos.text('SANS')), isFalse);
     });
 
     test('French accents survive the code page', () {

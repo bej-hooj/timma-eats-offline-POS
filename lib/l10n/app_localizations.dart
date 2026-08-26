@@ -499,6 +499,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucun code responsable configuré sur cette borne.'**
   String get kioskManagerPinUnset;
+
+  /// No description provided for @kioskSlipWithout.
+  ///
+  /// In fr, this message translates to:
+  /// **'SANS {ingredient}'**
+  String kioskSlipWithout(String ingredient);
 }
 
 class _AppLocalizationsDelegate

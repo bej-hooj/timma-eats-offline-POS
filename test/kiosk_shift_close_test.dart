@@ -103,11 +103,13 @@ void main() {
       // (§7.4), which is precisely why the two are reported apart.
       final PlacedOrder b = ring();
       store.updateOrder(
-        store.findOrder(b.order.clientId)!.copyWith(
-          status: PosOrderStatus.placed,
-          paymentStatus: PosPaymentStatus.paid,
-          tender: PosTender.mobileMoney,
-        ),
+        store
+            .findOrder(b.order.clientId)!
+            .copyWith(
+              status: PosOrderStatus.placed,
+              paymentStatus: PosPaymentStatus.paid,
+              tender: PosTender.mobileMoney,
+            ),
       );
 
       final ShiftCloseReport report = close();
@@ -120,24 +122,29 @@ void main() {
       );
     });
 
-    test('a paid ticket with NO tender is its own line, never folded into cash',
-        () {
-      final PlacedOrder a = ring();
-      store.updateOrder(
-        store.findOrder(a.order.clientId)!.copyWith(
-          status: PosOrderStatus.placed,
-          paymentStatus: PosPaymentStatus.paid,
-        ),
-      );
-      final ShiftCloseReport report = close();
-      expect(
-        report.cashTotal,
-        0,
-        reason: 'null tender NEVER means cash (§7.4) — folding it in would '
-            'hand a manager a drawer figure that cannot be counted',
-      );
-      expect(report.untenderedTotal, 3500);
-    });
+    test(
+      'a paid ticket with NO tender is its own line, never folded into cash',
+      () {
+        final PlacedOrder a = ring();
+        store.updateOrder(
+          store
+              .findOrder(a.order.clientId)!
+              .copyWith(
+                status: PosOrderStatus.placed,
+                paymentStatus: PosPaymentStatus.paid,
+              ),
+        );
+        final ShiftCloseReport report = close();
+        expect(
+          report.cashTotal,
+          0,
+          reason:
+              'null tender NEVER means cash (§7.4) — folding it in would '
+              'hand a manager a drawer figure that cannot be counted',
+        );
+        expect(report.untenderedTotal, 3500);
+      },
+    );
   });
 
   group('the unsent list is nameable', () {
@@ -150,7 +157,8 @@ void main() {
       expect(
         report.stranded.first.ticketNumber,
         placed.order.ticketNumber,
-        reason: '"sync failed" is not actionable — a manager cannot act '
+        reason:
+            '"sync failed" is not actionable — a manager cannot act '
             'without knowing WHICH order',
       );
       expect(report.stranded.first.kind, EnvelopeKind.placeOrder);
@@ -161,8 +169,9 @@ void main() {
     test('a quarantined ticket sorts above a merely pending one', () {
       final PlacedOrder stuck = ring();
       ring();
-      final OutboxEnvelope envelope =
-          store.envelopesForSubject(stuck.order.clientId).first;
+      final OutboxEnvelope envelope = store
+          .envelopesForSubject(stuck.order.clientId)
+          .first;
       store.saveEnvelope(
         envelope.copyWith(
           state: EnvelopeState.quarantined,
@@ -174,7 +183,8 @@ void main() {
       expect(
         report.stranded.first.reason,
         'bad_transition',
-        reason: 'a stuck ticket needs a human now; a pending one only needs '
+        reason:
+            'a stuck ticket needs a human now; a pending one only needs '
             'the network back',
       );
     });
@@ -188,8 +198,9 @@ void main() {
         store: store,
         sink: sink,
         clock: clock,
-        onServerFields: (OutboxEnvelope envelope, Map<String, Object?> fields) =>
-            engine.acknowledge(envelope.subject, fields),
+        onServerFields:
+            (OutboxEnvelope envelope, Map<String, Object?> fields) =>
+                engine.acknowledge(envelope.subject, fields),
       );
 
       // An hour of trading with the WAN down, across every status the kiosk
@@ -252,7 +263,8 @@ void main() {
       expect(
         sink.delivered.length,
         deliveredBefore,
-        reason: 'a duplicate drain must change nothing — every envelope is '
+        reason:
+            'a duplicate drain must change nothing — every envelope is '
             'already done, so there is nothing left to send',
       );
       expect(after.cashTotal, cashBefore);
@@ -263,7 +275,10 @@ void main() {
   });
 
   group('the shift-close screen', () {
-    Future<void> pumpScreen(WidgetTester tester, ShiftCloseReport report) async {
+    Future<void> pumpScreen(
+      WidgetTester tester,
+      ShiftCloseReport report,
+    ) async {
       tester.view.physicalSize = const Size(2400, 1600);
       tester.view.devicePixelRatio = 2;
       addTearDown(tester.view.reset);
@@ -283,11 +298,13 @@ void main() {
       engine.settleCounterCash(a.order.clientId);
       final PlacedOrder b = ring();
       store.updateOrder(
-        store.findOrder(b.order.clientId)!.copyWith(
-          status: PosOrderStatus.placed,
-          paymentStatus: PosPaymentStatus.paid,
-          tender: PosTender.mobileMoney,
-        ),
+        store
+            .findOrder(b.order.clientId)!
+            .copyWith(
+              status: PosOrderStatus.placed,
+              paymentStatus: PosPaymentStatus.paid,
+              tender: PosTender.mobileMoney,
+            ),
       );
 
       await pumpScreen(tester, close());
@@ -302,11 +319,13 @@ void main() {
       expect(find.text(MoneyFormatter.formatXaf(3500)), findsNWidgets(2));
     });
 
-    testWidgets('stuck tickets are named on screen, not counted',
-        (tester) async {
+    testWidgets('stuck tickets are named on screen, not counted', (
+      tester,
+    ) async {
       final PlacedOrder stuck = ring();
-      final OutboxEnvelope envelope =
-          store.envelopesForSubject(stuck.order.clientId).first;
+      final OutboxEnvelope envelope = store
+          .envelopesForSubject(stuck.order.clientId)
+          .first;
       store.saveEnvelope(
         envelope.copyWith(
           state: EnvelopeState.quarantined,
@@ -320,10 +339,7 @@ void main() {
         findsOneWidget,
         reason: 'a manager cannot chase "3 failed"',
       );
-      expect(
-        find.textContaining('${stuck.order.ticketNumber}'),
-        findsWidgets,
-      );
+      expect(find.textContaining('${stuck.order.ticketNumber}'), findsWidgets);
     });
 
     testWidgets('a settled shift says so plainly', (tester) async {

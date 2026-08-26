@@ -229,4 +229,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get kioskManagerPinUnset =>
       'Aucun code responsable configuré sur cette borne.';
+
+  @override
+  String kioskSlipWithout(String ingredient) {
+    return 'SANS $ingredient';
+  }
 }

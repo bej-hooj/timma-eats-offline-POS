@@ -23,12 +23,21 @@ class SlipLabels {
     required this.payAtCounter,
     required this.total,
     required this.takeAway,
+    required this.without,
   });
 
   final String header;
   final String payAtCounter;
   final String total;
   final String takeAway;
+
+  /// The pattern for a removed ingredient — "SANS {ingredient}" — with the
+  /// placeholder still in it.
+  ///
+  /// ⚠ A PATTERN and not a finished string, because one slip can carry several
+  /// removals and the printer has no localisations delegate to ask again. The
+  /// substitution happens in [Slip._line], once per ingredient.
+  final String without;
 }
 
 abstract final class Slip {
@@ -66,7 +75,7 @@ abstract final class Slip {
 
       EscPos.align(0),
       ..._rule(),
-      for (final PosOrderLine line in lines) ..._line(line, french),
+      for (final PosOrderLine line in lines) ..._line(line, french, labels),
       ..._rule(),
 
       EscPos.bold(true),
@@ -91,7 +100,11 @@ abstract final class Slip {
     ]);
   }
 
-  static List<List<int>> _line(PosOrderLine line, bool french) {
+  static List<List<int>> _line(
+    PosOrderLine line,
+    bool french,
+    SlipLabels labels,
+  ) {
     final String name = french ? line.nameFr : line.nameEn;
     final String qty = '${line.quantity}x ';
     final List<List<int>> out = <List<int>>[
@@ -101,6 +114,30 @@ abstract final class Slip {
     for (final PosLineModifier m in line.modifiers) {
       out
         ..add(EscPos.text('   ${french ? m.nameFr : m.nameEn}'))
+        ..add(<int>[EscPos.lf]);
+    }
+    /*
+     * R2 (migrations 49 + 52) — what the customer asked to LEAVE OUT.
+     *
+     * ⚠ BOLD, in capitals, and AFTER the modifiers rather than mixed among
+     * them. A cook reads a modifier as something to add and a removal as
+     * something to withhold; a removal printed in the same weight, in the same
+     * list, reads as "add onion" — the opposite of the request. Paper has no
+     * colour to fall back on, so emphasis and word order carry the whole
+     * distinction.
+     *
+     * The label is the FROZEN name from the order line (§6.5), so a reprint
+     * next week says what the customer actually asked for.
+     */
+    for (final PosRemovedIngredient i in line.removedIngredients) {
+      out
+        ..add(EscPos.bold(true))
+        ..add(
+          EscPos.text(
+            '   ${labels.without.replaceFirst('{ingredient}', (french ? i.nameFr : i.nameEn).toUpperCase())}',
+          ),
+        )
+        ..add(EscPos.bold(false))
         ..add(<int>[EscPos.lf]);
     }
     return out;

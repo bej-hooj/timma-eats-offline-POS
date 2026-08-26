@@ -367,7 +367,8 @@ Future<List<String>> _deviceAddresses() async {
   );
   return <String>[
     for (final NetworkInterface interface in interfaces)
-      for (final InternetAddress address in interface.addresses) address.address,
+      for (final InternetAddress address in interface.addresses)
+        address.address,
   ];
 }
 

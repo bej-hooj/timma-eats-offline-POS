@@ -23,8 +23,10 @@ void main(List<String> args) {
   stdout.writeln('server : $server');
   stdout.writeln('kiosk  : $mine');
   stdout.writeln(server == mine ? 'MATCH' : 'MISMATCH');
-  stdout.writeln('parsed : ${snapshot.products.length} products, '
-      '${snapshot.categories.length} categories, v${snapshot.version}');
+  stdout.writeln(
+    'parsed : ${snapshot.products.length} products, '
+    '${snapshot.categories.length} categories, v${snapshot.version}',
+  );
 
   if (server == mine) {
     return;
@@ -45,8 +47,12 @@ void main(List<String> args) {
     if (dartCanonical[i] != sentCanonical[i]) {
       final int from = (i - 60).clamp(0, i);
       stdout.writeln('first difference at byte $i');
-      stdout.writeln('  dart: ...${dartCanonical.substring(from, (i + 60).clamp(0, dartCanonical.length))}');
-      stdout.writeln('  wire: ...${sentCanonical.substring(from, (i + 60).clamp(0, sentCanonical.length))}');
+      stdout.writeln(
+        '  dart: ...${dartCanonical.substring(from, (i + 60).clamp(0, dartCanonical.length))}',
+      );
+      stdout.writeln(
+        '  wire: ...${sentCanonical.substring(from, (i + 60).clamp(0, sentCanonical.length))}',
+      );
       return;
     }
   }

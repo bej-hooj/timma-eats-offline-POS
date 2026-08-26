@@ -110,5 +110,13 @@
   "kioskManagerPinTitle": "Code responsable",
   "kioskManagerPinWrong": "Code incorrect.",
   "kioskManagerPinOpen": "Ouvrir",
-  "kioskManagerPinUnset": "Aucun code responsable configuré sur cette borne."
+  "kioskManagerPinUnset": "Aucun code responsable configuré sur cette borne.",
+  "kioskSlipWithout": "SANS {ingredient}",
+  "@kioskSlipWithout": {
+    "placeholders": {
+      "ingredient": {
+        "type": "String"
+      }
+    }
+  }
 }

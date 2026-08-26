@@ -241,7 +241,8 @@ void main() {
     expect(
       photo.height,
       greaterThan(KioskScale.minTarget),
-      reason: 'the dish photo fills the space the choices are not using, '
+      reason:
+          'the dish photo fills the space the choices are not using, '
           'instead of sitting in the corner at one touch target square',
     );
     // The width is the assertion that actually says "hero": with nothing to
@@ -250,7 +251,8 @@ void main() {
     expect(
       photo.width,
       greaterThan(868 / 2),
-      reason: 'with no variants and no option groups the dish takes the full '
+      reason:
+          'with no variants and no option groups the dish takes the full '
           'width — there is no choices column to make room for',
     );
 

@@ -37,10 +37,8 @@ import 'package:pos_core/pos_core.dart';
 /// moving the pinned `pos_*` commit in both tablet repos, which is not a thing
 /// to do for a diagnostic.
 class DiagnosingMenuSnapshotSource extends SupabaseMenuSnapshotSource {
-  DiagnosingMenuSnapshotSource({
-    required this.gateway,
-    required this.deviceKey,
-  }) : super(gateway: gateway, deviceKey: deviceKey);
+  DiagnosingMenuSnapshotSource({required this.gateway, required this.deviceKey})
+    : super(gateway: gateway, deviceKey: deviceKey);
 
   final PosCloudGateway gateway;
   final String deviceKey;

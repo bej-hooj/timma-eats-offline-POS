@@ -214,8 +214,9 @@ void main() {
   });
 
   group('the idle timeout', () {
-    testWidgets('an abandoned cart never becomes the next customer\'s order',
-        (tester) async {
+    testWidgets('an abandoned cart never becomes the next customer\'s order', (
+      tester,
+    ) async {
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));
@@ -251,9 +252,13 @@ void main() {
 
       // Just under the timeout, then a touch, then just under it again: a
       // customer reading the menu must not be thrown out mid-decision.
-      await tester.pump(KioskSessionController.idleAfter - const Duration(seconds: 5));
+      await tester.pump(
+        KioskSessionController.idleAfter - const Duration(seconds: 5),
+      );
       await tester.tap(find.text('Notre carte'), warnIfMissed: false);
-      await tester.pump(KioskSessionController.idleAfter - const Duration(seconds: 5));
+      await tester.pump(
+        KioskSessionController.idleAfter - const Duration(seconds: 5),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(KioskMenuScreen), findsOneWidget);
@@ -261,8 +266,9 @@ void main() {
   });
 
   group('the composer', () {
-    testWidgets('min/max count DISTINCT options, never total quantity',
-        (tester) async {
+    testWidgets('min/max count DISTINCT options, never total quantity', (
+      tester,
+    ) async {
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));
@@ -285,13 +291,15 @@ void main() {
       expect(
         order.total,
         4000,
-        reason: 'base 3500 + fries 500 — the swap replaced plantain, and a '
+        reason:
+            'base 3500 + fries 500 — the swap replaced plantain, and a '
             'quantity-counting bug would have charged for both',
       );
     });
 
-    testWidgets('the price shown is the price the engine charges',
-        (tester) async {
+    testWidgets('the price shown is the price the engine charges', (
+      tester,
+    ) async {
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));
@@ -337,14 +345,16 @@ void main() {
           expect(
             field.keyboardType,
             isNot(TextInputType.phone),
-            reason: 'a phone keypad on a kiosk is a phone number being asked for',
+            reason:
+                'a phone keypad on a kiosk is a phone number being asked for',
           );
           expect(field.keyboardType, isNot(TextInputType.emailAddress));
           expect(field.keyboardType, isNot(TextInputType.name));
           expect(
             field.autofillHints,
             anyOf(isNull, isEmpty),
-            reason: 'an autofill hint is the platform being told what personal '
+            reason:
+                'an autofill hint is the platform being told what personal '
                 'value belongs here',
           );
           expect(
@@ -368,22 +378,26 @@ void main() {
   });
 
   group('French and English', () {
-    testWidgets('the kiosk opens in French regardless of the tablet OS locale',
-        (tester) async {
-      pinMenu();
-      await pump(tester);
-      await tester.tap(find.byType(KioskAttractScreen));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Notre carte'),
-        findsOneWidget,
-        reason: 'a kiosk in Douala defaults to the product locale, not to '
-            'whatever the tablet was set to in a warehouse',
-      );
-    });
+    testWidgets(
+      'the kiosk opens in French regardless of the tablet OS locale',
+      (tester) async {
+        pinMenu();
+        await pump(tester);
+        await tester.tap(find.byType(KioskAttractScreen));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Notre carte'),
+          findsOneWidget,
+          reason:
+              'a kiosk in Douala defaults to the product locale, not to '
+              'whatever the tablet was set to in a warehouse',
+        );
+      },
+    );
 
-    testWidgets('the toggle switches the menu, and the session resets it',
-        (tester) async {
+    testWidgets('the toggle switches the menu, and the session resets it', (
+      tester,
+    ) async {
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));
@@ -405,8 +419,9 @@ void main() {
   });
 
   group('touch targets are sized for a standing customer', () {
-    testWidgets('every control on the menu path is at least 72dp',
-        (tester) async {
+    testWidgets('every control on the menu path is at least 72dp', (
+      tester,
+    ) async {
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));
@@ -434,8 +449,9 @@ void main() {
   });
 
   group('K8 hardening — no back-door out of the app', () {
-    testWidgets('the Android back gesture never leaves the kiosk',
-        (tester) async {
+    testWidgets('the Android back gesture never leaves the kiosk', (
+      tester,
+    ) async {
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));
@@ -459,27 +475,30 @@ void main() {
       );
     });
 
-    testWidgets('back is treated as activity, so it does not idle out mid-use',
-        (tester) async {
-      pinMenu();
-      await pump(tester);
-      await tester.tap(find.byType(KioskAttractScreen));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'back is treated as activity, so it does not idle out mid-use',
+      (tester) async {
+        pinMenu();
+        await pump(tester);
+        await tester.tap(find.byType(KioskAttractScreen));
+        await tester.pumpAndSettle();
 
-      await tester.pump(
-        KioskSessionController.idleAfter - const Duration(seconds: 5),
-      );
-      await tester.binding.handlePopRoute();
-      await tester.pump(
-        KioskSessionController.idleAfter - const Duration(seconds: 5),
-      );
-      await tester.pumpAndSettle();
+        await tester.pump(
+          KioskSessionController.idleAfter - const Duration(seconds: 5),
+        );
+        await tester.binding.handlePopRoute();
+        await tester.pump(
+          KioskSessionController.idleAfter - const Duration(seconds: 5),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(KioskMenuScreen), findsOneWidget);
-    });
+        expect(find.byType(KioskMenuScreen), findsOneWidget);
+      },
+    );
 
-    testWidgets('the kiosk exposes no navigation to any other surface',
-        (tester) async {
+    testWidgets('the kiosk exposes no navigation to any other surface', (
+      tester,
+    ) async {
       pinMenu();
       await pump(tester);
       await tester.tap(find.byType(KioskAttractScreen));

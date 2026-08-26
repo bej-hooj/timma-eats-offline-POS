@@ -284,6 +284,8 @@ SlipLabels _slipLabels(BuildContext context) {
     payAtCounter: l10n.kioskCounterTitle,
     total: l10n.kioskCartTotal,
     takeAway: l10n.kioskTakeAway,
+    // The PATTERN, placeholder intact — `Slip` substitutes per ingredient.
+    without: l10n.kioskSlipWithout('{ingredient}'),
   );
 }
 

@@ -107,7 +107,8 @@ void main() {
     // the broken code.
     await _until(
       () => c.read(hubProvider).endpoint?.host == '192.168.1.245',
-      reason: 'the borne kept printing an address it had moved off, which is '
+      reason:
+          'the borne kept printing an address it had moved off, which is '
           'what the kitchen was dialling',
     );
 
