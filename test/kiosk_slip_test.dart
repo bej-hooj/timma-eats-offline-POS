@@ -26,6 +26,7 @@ void main() {
     String clientId = 'c-1',
     String branchId = 'b-1',
     int? ticketNumber = 42,
+    String? stationCode,
   }) => PosOrder(
     clientId: clientId,
     branchId: branchId,
@@ -41,6 +42,7 @@ void main() {
     deliveryFee: 0,
     total: 3500,
     ticketNumber: ticketNumber,
+    stationCode: stationCode,
     placedAtDevice: DateTime.utc(2026, 8, 16, 11, 30),
     statusChangedAt: DateTime.utc(2026, 8, 16, 11, 30),
   );
@@ -181,6 +183,45 @@ void main() {
             'a slip whose number is the size of its line items gets read '
             'wrong across a counter',
       );
+    });
+
+    test('the number is printed WITH its station, so two bornes differ', () {
+      /*
+       * ⚠ `42` alone is not an identifier. `allocateTicketNumber` counts per
+       * till and restarts at 1 at the Douala boundary, so a branch running a
+       * second borne hands two different customers a slip saying the same
+       * thing. Migration 54 / `ticketLabelOrNull`.
+       *
+       * Asserted on the REAL medium — the bytes that reach the printer.
+       */
+      final Uint8List bytes = Slip.build(
+        order: order(ticketNumber: 42, stationCode: 'B1'),
+        lines: lines(),
+        labels: labels,
+        code: CollectionCode.forOrder(order(), secret: secret),
+        french: true,
+      );
+
+      expect(_contains(bytes, utf8.encode('B1-42')), isTrue);
+      expect(
+        _contains(bytes, utf8.encode('B1-42')) &&
+            !_contains(bytes, utf8.encode('B2-42')),
+        isTrue,
+      );
+    });
+
+    test('a sale from before stations prints the bare number', () {
+      // Never an invented letter: a wrong station sends a customer to the
+      // wrong borne, which is worse than a number with no station on it.
+      final Uint8List bytes = Slip.build(
+        order: order(ticketNumber: 42),
+        lines: lines(),
+        labels: labels,
+        code: CollectionCode.forOrder(order(), secret: secret),
+        french: true,
+      );
+
+      expect(_contains(bytes, utf8.encode('42')), isTrue);
     });
 
     test('the QR carries the verifiable payload, not the ticket number', () {

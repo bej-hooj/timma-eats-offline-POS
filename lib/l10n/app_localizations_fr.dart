@@ -234,4 +234,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String kioskSlipWithout(String ingredient) {
     return 'SANS $ingredient';
   }
+
+  @override
+  String kioskDishPrepWindow(int min, int max) {
+    return '$min–$max min';
+  }
+
+  @override
+  String kioskDishPrepWindowSemantics(int min, int max) {
+    return 'Préparation : $min à $max minutes';
+  }
+
+  @override
+  String kioskDishSpiceLevel(String level) {
+    String _temp0 = intl.Intl.selectLogic(level, {
+      '1': 'Peu épicé',
+      '2': 'Épicé',
+      '3': 'Très épicé',
+      'other': 'Non épicé',
+    });
+    return '$_temp0';
+  }
 }

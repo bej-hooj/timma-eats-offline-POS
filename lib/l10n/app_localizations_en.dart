@@ -231,4 +231,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String kioskSlipWithout(String ingredient) {
     return 'NO $ingredient';
   }
+
+  @override
+  String kioskDishPrepWindow(int min, int max) {
+    return '$min–$max min';
+  }
+
+  @override
+  String kioskDishPrepWindowSemantics(int min, int max) {
+    return 'Preparation: $min to $max minutes';
+  }
+
+  @override
+  String kioskDishSpiceLevel(String level) {
+    String _temp0 = intl.Intl.selectLogic(level, {
+      '1': 'Mildly spicy',
+      '2': 'Spicy',
+      '3': 'Very spicy',
+      'other': 'Not spicy',
+    });
+    return '$_temp0';
+  }
 }

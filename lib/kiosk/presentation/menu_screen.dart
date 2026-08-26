@@ -322,6 +322,12 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                       photoCache: widget.photoCache,
                       soldOut: !product.available,
                       soldOutLabel: l10n.kioskSoldOut,
+                      // R1 meta, straight off the pinned bundle (migration 53).
+                      // ⚠ Heat is `spice_level`, never the `spicy` tag.
+                      prepMin: product.prepMin,
+                      prepMax: product.prepMax,
+                      spiceLevel: product.spiceLevel,
+                      origin: french ? product.originFr : product.originEn,
                       // Sold out is a barrier, not a badge: the card is not
                       // tappable at all, so the composer can never be reached
                       // for a dish the kitchen cannot make (§K4 rule 4).

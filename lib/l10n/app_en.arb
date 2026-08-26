@@ -118,5 +118,37 @@
         "type": "String"
       }
     }
+  },
+  "kioskDishPrepWindow": "{min}–{max} min",
+  "@kioskDishPrepWindow": {
+    "description": "Preparation window on the kiosk dish card. Mirrors the app's `dishPrepWindow` literal-for-literal: the same dish must read the same on the borne as on the phone.",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskDishPrepWindowSemantics": "Preparation: {min} to {max} minutes",
+  "@kioskDishPrepWindowSemantics": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "kioskDishSpiceLevel": "{level, select, 1{Mildly spicy} 2{Spicy} 3{Very spicy} other{Not spicy}}",
+  "@kioskDishSpiceLevel": {
+    "description": "Screen-reader name for the chilli. A `select`, not a `plural`. \u26a0 The CARD draws ONE chilli whatever the level; the composer is where a level belongs. Level 0 draws nothing at all.",
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -64,10 +64,22 @@ abstract final class Slip {
       EscPos.text(labels.takeAway),
       <int>[EscPos.lf, EscPos.lf],
 
-      // The number, as large as the printer can make it.
+      /*
+       * The number, as large as the printer can make it — and the STATION with
+       * it.
+       *
+       * ⚠ At triple width this line is 10 characters wide on a 32-column
+       * printer, and `B1-07` is 5. The station fits; a third character in the
+       * code would not, which is why `stationAlphabet` is two.
+       *
+       * The station is here because `allocateTicketNumber` counts per till and
+       * restarts at 1 each Douala day: a branch running two bornes hands two
+       * different customers a slip that says the same thing. The fallback is
+       * the bare number, never an invented letter.
+       */
       EscPos.size(width: 3, height: 3),
       EscPos.bold(true),
-      EscPos.text('${order.ticketNumber ?? '-'}'),
+      EscPos.text(order.ticketLabelOrNull ?? '-'),
       <int>[EscPos.lf],
       EscPos.size(),
       EscPos.bold(false),
