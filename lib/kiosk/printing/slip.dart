@@ -24,6 +24,8 @@ class SlipLabels {
     required this.total,
     required this.takeAway,
     required this.without,
+    required this.groupLabel,
+    required this.groupNone,
   });
 
   final String header;
@@ -38,6 +40,19 @@ class SlipLabels {
   /// removals and the printer has no localisations delegate to ask again. The
   /// substitution happens in [Slip._line], once per ingredient.
   final String without;
+
+  /// Q69 — the composition patterns, placeholders intact, for the same reason
+  /// [without] keeps its: one slip carries several groups and the printer has
+  /// no localisations delegate to ask again.
+  final String groupLabel;
+
+  /// What a group that was OFFERED and left unanswered prints as.
+  ///
+  /// ⚠⚠ It is a WORD, not a blank. A dish that offered *Piment* and was given
+  /// none is byte-identical, in the flat modifier list, to a dish that never
+  /// offered it — so printing nothing tells the counter and the kitchen the
+  /// same thing in two different situations.
+  final String groupNone;
 }
 
 abstract final class Slip {
@@ -123,10 +138,61 @@ abstract final class Slip {
       EscPos.text(_row('$qty$name', MoneyFormatter.formatXaf(line.lineTotal))),
       <int>[EscPos.lf],
     ];
-    for (final PosLineModifier m in line.modifiers) {
+    /*
+     * The size, printed before the options: it qualifies the dish itself, and a
+     * slip that says *Poulet DG* where the customer bought the large one is a
+     * dispute at the counter.
+     */
+    final String? variant = french ? line.variantNameFr : line.variantNameEn;
+
+    if (variant != null && variant.isNotEmpty) {
       out
-        ..add(EscPos.text('   ${french ? m.nameFr : m.nameEn}'))
+        ..add(EscPos.text('   $variant'))
         ..add(<int>[EscPos.lf]);
+    }
+
+    /*
+     * ⚠⚠ **Q69 — group by group, and the DECLINED groups are printed.**
+     *
+     * Owner, 2026-09-02: *"ALl the accompagnement. pepper or not and every
+     * informations"*. `line.modifiers` lists what was CHOSEN and names no
+     * group, so *Piment* offered-and-refused prints exactly like a dish that
+     * never offered it — and paper has no way to ask.
+     *
+     * ⚠ The quantity rides with the option: `max_qty` options are priced per
+     * unit, so a slip that says *Plantain mûr* for two of them under-describes
+     * both the plate and the bill the customer is about to pay at the counter.
+     *
+     * ⚠ The fallback is what a line composed on THIS borne looks like — it has
+     * no group picker yet (Q70) — and what every row placed before migration 63
+     * carries. Not a second style: a different fact.
+     */
+    String option(PosLineModifier m) {
+      final String label = french ? m.nameFr : m.nameEn;
+
+      return m.quantity > 1 ? '$label x${m.quantity}' : label;
+    }
+
+    if (line.modifierGroups.isNotEmpty) {
+      for (final PosLineGroup g in line.modifierGroups) {
+        final String answer = g.options.isEmpty
+            ? labels.groupNone
+            : g.options.map(option).join(', ');
+
+        out
+          ..add(
+            EscPos.text(
+              '   ${labels.groupLabel.replaceFirst('{group}', french ? g.nameFr : g.nameEn).replaceFirst('{answer}', answer)}',
+            ),
+          )
+          ..add(<int>[EscPos.lf]);
+      }
+    } else {
+      for (final PosLineModifier m in line.modifiers) {
+        out
+          ..add(EscPos.text('   ${option(m)}'))
+          ..add(<int>[EscPos.lf]);
+      }
     }
     /*
      * R2 (migrations 49 + 52) — what the customer asked to LEAVE OUT.

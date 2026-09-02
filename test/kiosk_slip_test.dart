@@ -139,6 +139,9 @@ void main() {
       total: 'Total',
       takeAway: 'À emporter',
       without: 'SANS {ingredient}',
+      // Q69 — the composition patterns, placeholders intact.
+      groupLabel: '{group} : {answer}',
+      groupNone: 'AUCUN',
     );
 
     List<PosOrderLine> lines() => <PosOrderLine>[
@@ -160,6 +163,71 @@ void main() {
       code: CollectionCode.forOrder(order(), secret: secret),
       french: true,
     );
+
+    test('⚠⚠ Q69 — a group offered and DECLINED is printed on the slip', () {
+      /*
+       * Owner, 2026-09-02: *"ALl the accompagnement. pepper or not and every
+       * informations"*. The slip in a customer's hand is the contract at the
+       * counter, and a flat list of chosen options cannot say that *Piment*
+       * was offered and refused — that row is byte-identical to a dish that
+       * never offered it.
+       *
+       * ⚠ Latin-1 decoded loosely: the slip is CP858 bytes and these
+       * assertions are about presence, not about the codepage.
+       */
+      final Uint8List bytes = Slip.build(
+        order: order(),
+        lines: <PosOrderLine>[
+          const PosOrderLine(
+            lineNo: 0,
+            productId: 'p-poulet',
+            nameFr: 'Poulet DG',
+            nameEn: 'Chicken DG',
+            unitPrice: 5100,
+            quantity: 1,
+            lineTotal: 5100,
+            variantNameFr: 'Solo',
+            variantNameEn: 'Solo',
+            modifierGroups: <PosLineGroup>[
+              PosLineGroup(
+                groupId: 'g-side',
+                nameFr: 'Accompagnement',
+                nameEn: 'Side',
+                options: <PosLineModifier>[
+                  PosLineModifier(
+                    optionId: 'o-plantain',
+                    nameFr: 'Plantain',
+                    nameEn: 'Plantain',
+                    priceDelta: 100,
+                    quantity: 2,
+                  ),
+                ],
+              ),
+              PosLineGroup(
+                groupId: 'g-chili',
+                nameFr: 'Piment',
+                nameEn: 'Chili',
+              ),
+            ],
+          ),
+        ],
+        labels: labels,
+        code: CollectionCode.forOrder(order(), secret: secret),
+        french: true,
+      );
+
+      final String slip = latin1.decode(bytes, allowInvalid: true);
+
+      expect(slip, contains('Solo'), reason: 'the size qualifies the dish');
+      expect(slip, contains('Accompagnement : Plantain x2'));
+      expect(
+        slip,
+        contains('Piment : AUCUN'),
+        reason:
+            'printing nothing for Piment is indistinguishable from a dish '
+            'that never offered it, and paper cannot be asked',
+      );
+    });
 
     test('it opens with a reset and ends with a cut', () {
       final Uint8List bytes = build();

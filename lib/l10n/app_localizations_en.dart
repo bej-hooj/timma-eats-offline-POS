@@ -233,6 +233,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String kioskSlipGroupLabel(String group, String answer) {
+    return '$group: $answer';
+  }
+
+  @override
+  String get kioskSlipGroupNone => 'NONE';
+
+  @override
   String kioskDishPrepWindow(int min, int max) {
     return '$min–$max min';
   }

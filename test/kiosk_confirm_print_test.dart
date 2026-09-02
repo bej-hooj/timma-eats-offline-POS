@@ -299,6 +299,9 @@ void main() {
       total: 'Total',
       takeAway: 'À emporter',
       without: 'SANS {ingredient}',
+      // Q69 — the composition patterns, placeholders intact.
+      groupLabel: '{group} : {answer}',
+      groupNone: 'AUCUN',
     );
 
     final KioskSessionController controller = container.read(

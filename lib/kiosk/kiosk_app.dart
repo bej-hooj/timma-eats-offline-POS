@@ -286,6 +286,10 @@ SlipLabels _slipLabels(BuildContext context) {
     takeAway: l10n.kioskTakeAway,
     // The PATTERN, placeholder intact — `Slip` substitutes per ingredient.
     without: l10n.kioskSlipWithout('{ingredient}'),
+    // Q69 — the same PATTERN rule as `without`: one slip carries several
+    // groups, and the printer cannot come back for a second translation.
+    groupLabel: l10n.kioskSlipGroupLabel('{group}', '{answer}'),
+    groupNone: l10n.kioskSlipGroupNone,
   );
 }
 

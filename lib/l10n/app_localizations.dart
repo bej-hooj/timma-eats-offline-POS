@@ -506,6 +506,18 @@ abstract class AppLocalizations {
   /// **'SANS {ingredient}'**
   String kioskSlipWithout(String ingredient);
 
+  /// Q69 — une ligne de composition sur le ticket imprimé. Le motif garde ses placeholders : un ticket porte plusieurs groupes et l'imprimante n'a pas de délégué de localisation à qui redemander.
+  ///
+  /// In fr, this message translates to:
+  /// **'{group} : {answer}'**
+  String kioskSlipGroupLabel(String group, String answer);
+
+  /// Q69 — la réponse « rien choisi » pour un groupe QUI A ÉTÉ PROPOSÉ. Ne rien imprimer serait indiscernable d'un plat qui n'a jamais posé la question.
+  ///
+  /// In fr, this message translates to:
+  /// **'AUCUN'**
+  String get kioskSlipGroupNone;
+
   /// Preparation window on the kiosk dish card. Mirrors the app's `dishPrepWindow` literal-for-literal: the same dish must read the same on the borne as on the phone.
   ///
   /// In fr, this message translates to:
