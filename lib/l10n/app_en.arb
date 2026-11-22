@@ -174,5 +174,7 @@
   "kioskManagerPairOrCode": "Or type this code on the kitchen tablet",
   "kioskManagerPairWaiting": "Waiting for a kitchen",
   "kioskManagerPairWaitingBody": "On the kitchen tablet, tap “Pair with one tap”.",
-  "kioskManagerPairCodeFallback": "Or type this code on the kitchen"
+  "kioskManagerPairCodeFallback": "Or type this code on the kitchen",
+  "kioskDishIngredients": "INGREDIENTS",
+  "kioskDishAllergens": "Contains"
 }

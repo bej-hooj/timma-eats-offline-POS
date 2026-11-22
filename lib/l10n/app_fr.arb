@@ -174,5 +174,7 @@
   "kioskManagerPairOrCode": "Ou saisissez ce code sur la tablette cuisine",
   "kioskManagerPairWaiting": "En attente d'une cuisine",
   "kioskManagerPairWaitingBody": "Sur la tablette cuisine, touchez « Apparier en un geste ».",
-  "kioskManagerPairCodeFallback": "Ou saisissez ce code sur la cuisine"
+  "kioskManagerPairCodeFallback": "Ou saisissez ce code sur la cuisine",
+  "kioskDishIngredients": "INGRÉDIENTS",
+  "kioskDishAllergens": "Contient"
 }

@@ -287,4 +287,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kioskManagerPairCodeFallback => 'Or type this code on the kitchen';
+
+  @override
+  String get kioskDishIngredients => 'INGREDIENTS';
+
+  @override
+  String get kioskDishAllergens => 'Contains';
 }

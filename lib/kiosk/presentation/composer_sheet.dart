@@ -5,6 +5,7 @@ import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import '../catalog/dish_photo_cache.dart';
+import 'widgets/kiosk_dish_detail.dart';
 import 'widgets/kiosk_dish_thumb.dart';
 import '../theme/kiosk_scale.dart';
 
@@ -135,6 +136,14 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
     // The dish now fills the space it was leaving empty. A kiosk is read at
     // arm's length by somebody standing up, deciding: the photograph is the
     // argument, and it should be the biggest thing on the screen.
+    // ⚠ The right column is no longer conditional on there being CHOICES.
+    //
+    // It used to be, and that is why "Ndolé" was a full-bleed photograph with
+    // nothing else on the screen: most of this menu has no variants and no
+    // option groups, so most dishes showed a picture and a price and left the
+    // customer to guess what was in it. Every dish has something to say now —
+    // a description, what it is made of, what it contains — so the panel is
+    // always there and the choices simply join it when there are any.
     final bool hasChoices =
         widget.product.variants.isNotEmpty ||
         widget.product.optionGroups.isNotEmpty;
@@ -162,12 +171,14 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                     title: _title(french, theme),
                   ),
                 ),
-                if (hasChoices) ...<Widget>[
-                  const SizedBox(width: KioskScale.gapXl),
-                  Expanded(
-                    flex: 6,
-                    child: ListView(
-                      children: <Widget>[
+                const SizedBox(width: KioskScale.gapXl),
+                Expanded(
+                  flex: 6,
+                  child: ListView(
+                    children: <Widget>[
+                      KioskDishDetail(product: widget.product, french: french),
+                      if (hasChoices) ...<Widget>[
+                        const SizedBox(height: KioskScale.gapLg),
                         if (widget.product.variants.isNotEmpty)
                           _VariantGroup(
                             variants: widget.product.variants,
@@ -185,13 +196,23 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                             onToggle: (SnapshotOption o) => _toggle(group, o),
                           ),
                       ],
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
           const SizedBox(height: KioskScale.gapLg),
+          // ⚠ The actions SHARE the leftover width instead of asking for their
+          // intrinsic one.
+          //
+          // Measured at the Samsung's 868 dp: the stepper plus *Annuler* plus
+          // *Ajouter 4 500 FCFA* want about 1 055 dp, and the row had a
+          // `Spacer` — which gives nothing back, so the overflow lands on the
+          // primary action, the one control a customer must be able to press.
+          // The price makes that button's width depend on the ORDER, so it
+          // cannot be sized by hope: a four-figure total is wider than a
+          // three-figure one and the row would fit until somebody ordered two.
           Row(
             children: <Widget>[
               _QuantityStepper(
@@ -199,29 +220,42 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                 label: l10n.kioskQuantity,
                 onChanged: (int q) => setState(() => _quantity = q),
               ),
-              const Spacer(),
-              OutlinedButton(
-                onPressed: widget.onCancel,
-                child: Text(l10n.kioskCancel),
+              const SizedBox(width: KioskScale.gapMd),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: widget.onCancel,
+                  child: Text(
+                    l10n.kioskCancel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
               const SizedBox(width: KioskScale.gapMd),
-              FilledButton(
-                // Disabled until every required group is satisfied. The gate is
-                // the same `_complete` the engine's own option validation would
-                // reach, so the customer is never allowed to build something
-                // that will be refused at placement.
-                onPressed: _complete
-                    ? () => widget.onAdd(
-                        KioskComposition(
-                          quantity: _quantity,
-                          variant: _variant,
-                          options: _selectedOptions,
-                        ),
-                      )
-                    : null,
-                child: Text(
-                  '${l10n.kioskAdd}  '
-                  '${MoneyFormatter.formatXaf(_unitPrice * _quantity)}',
+              Expanded(
+                // Twice the cancel button: one primary action per screen, and
+                // it should look like it.
+                flex: 2,
+                child: FilledButton(
+                  // Disabled until every required group is satisfied. The gate is
+                  // the same `_complete` the engine's own option validation would
+                  // reach, so the customer is never allowed to build something
+                  // that will be refused at placement.
+                  onPressed: _complete
+                      ? () => widget.onAdd(
+                          KioskComposition(
+                            quantity: _quantity,
+                            variant: _variant,
+                            options: _selectedOptions,
+                          ),
+                        )
+                      : null,
+                  child: Text(
+                    '${l10n.kioskAdd}  '
+                    '${MoneyFormatter.formatXaf(_unitPrice * _quantity)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ],

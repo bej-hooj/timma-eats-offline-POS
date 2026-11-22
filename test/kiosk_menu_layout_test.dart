@@ -265,15 +265,23 @@ void main() {
           'the dish photo fills the space the choices are not using, '
           'instead of sitting in the corner at one touch target square',
     );
-    // The width is the assertion that actually says "hero": with nothing to
-    // decide, the dish owns the whole landscape rather than a left column with
-    // a cream void beside it. 868 dp is the Samsung's landscape width.
+    // ⚠ **The rule changed on 2026-11-22 and this is the new one.**
+    //
+    // It used to demand the dish take the FULL width when there was nothing to
+    // decide. That was right while the right-hand column held only choices —
+    // and most of this menu has none, so the alternative was a cream void. It
+    // is wrong now: the column always carries what the dish IS (description,
+    // ingredients, allergens), which is exactly what a customer standing at a
+    // kiosk was missing, so there is no such thing as an empty right column.
+    //
+    // What still matters, and is asserted instead: the photograph remains a
+    // hero rather than a thumbnail. 868 dp is the Samsung's landscape width.
     expect(
       photo.width,
-      greaterThan(868 / 2),
+      greaterThan(868 / 4),
       reason:
-          'with no variants and no option groups the dish takes the full '
-          'width — there is no choices column to make room for',
+          'the dish photo is the argument for the dish — it must stay a hero '
+          'beside the detail, not shrink back to a thumbnail',
     );
 
     // ⚠ The composer's action row overflows IN THIS HARNESS ONLY, and the

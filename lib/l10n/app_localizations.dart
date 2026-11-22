@@ -583,6 +583,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ou saisissez ce code sur la cuisine'**
   String get kioskManagerPairCodeFallback;
+
+  /// No description provided for @kioskDishIngredients.
+  ///
+  /// In fr, this message translates to:
+  /// **'INGRÉDIENTS'**
+  String get kioskDishIngredients;
+
+  /// No description provided for @kioskDishAllergens.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contient'**
+  String get kioskDishAllergens;
 }
 
 class _AppLocalizationsDelegate

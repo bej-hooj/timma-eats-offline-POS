@@ -116,6 +116,62 @@ abstract final class KioskDevProvisioning {
         available: true,
         sortIndex: 2,
         photoUrl: '$bucket/ndole-miondo.webp',
+        // Shaped like the real bundle (migration 20261122180000) so the dish
+        // page can be built and seen without touching production: a
+        // description, tags, ingredients with their marks, and — the point of
+        // the exercise — ingredients that carry allergens.
+        descriptionFr:
+            'Feuilles de ndolé mijotées aux arachides, avec bœuf, poisson '
+            'fumé et crevettes, à l\'huile de palme.',
+        descriptionEn:
+            'Bitterleaf simmered with groundnuts, beef, smoked fish and '
+            'crayfish in palm oil.',
+        spiceLevel: 1,
+        originFr: 'Littoral',
+        originEn: 'Littoral',
+        tags: <String>['new'],
+        ingredients: <SnapshotIngredient>[
+          SnapshotIngredient(
+            ingredientId: 'i-ndole',
+            nameFr: 'Feuilles de ndolé',
+            nameEn: 'Ndolé leaves',
+            icon: '🥬',
+          ),
+          SnapshotIngredient(
+            ingredientId: 'i-arachide',
+            nameFr: 'Arachides',
+            nameEn: 'Peanuts',
+            icon: '🥜',
+            allergenTags: <String>['peanuts'],
+          ),
+          SnapshotIngredient(
+            ingredientId: 'i-boeuf',
+            nameFr: 'Bœuf',
+            nameEn: 'Beef',
+            icon: '🥩',
+          ),
+          SnapshotIngredient(
+            ingredientId: 'i-poisson',
+            nameFr: 'Poisson fumé',
+            nameEn: 'Smoked fish',
+            icon: '🐟',
+            allergenTags: <String>['fish'],
+          ),
+          SnapshotIngredient(
+            ingredientId: 'i-crevette',
+            nameFr: 'Crevettes',
+            nameEn: 'Shrimp',
+            icon: '🦐',
+            allergenTags: <String>['crustaceans'],
+          ),
+          SnapshotIngredient(
+            ingredientId: 'i-palme',
+            nameFr: 'Huile de palme',
+            nameEn: 'Palm oil',
+            icon: '🧴',
+            removable: true,
+          ),
+        ],
       ),
       SnapshotProduct(
         productId: 'dev-eru',
