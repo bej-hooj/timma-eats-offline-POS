@@ -30,7 +30,18 @@ class KioskCloudCatalog {
     required this.store,
     required this.photos,
     this.refreshInterval = const Duration(minutes: 15),
-  });
+    bool Function()? canPin,
+    this.pinNow,
+  }) : canPin = canPin ?? _alwaysIdle;
+
+  static bool _alwaysIdle() => true;
+
+  /// The fetch-and-pin itself, overridable **only** so the `canPin` gate can be
+  /// asserted against a live route. A test that proved the gate with no cloud
+  /// at all would prove nothing: the cloud-less path returns early anyway, and
+  /// this repo has already shipped one vacuous link test that let a real bug
+  /// through for exactly that reason.
+  final Future<void> Function()? pinNow;
 
   /// The cloud half, or null on a tablet with no device key.
   ///
@@ -45,6 +56,26 @@ class KioskCloudCatalog {
   /// How often a running kiosk asks the dashboard whether the menu moved.
   /// Ops edit a menu a few times a day, not a few times a minute.
   final Duration refreshInterval;
+
+  /// Whether it is safe to swap the menu **right now**.
+  ///
+  /// ⚠ This is a money rule, not politeness. `PosEngine.placeKioskOrder`
+  /// re-prices from `store.activeSnapshot()` **at placement time**, so a pin
+  /// that lands while a customer is choosing charges them the *new* price for
+  /// the screen they read at the *old* one — silently — and a dish the
+  /// dashboard withdrew mid-order throws instead of selling. So a pin waits for
+  /// an idle kiosk. Nothing is lost: the bundle is not consumed, and the next
+  /// tick takes it the moment the customer is done.
+  final bool Function() canPin;
+
+  /// Bumped once per pin that actually **changed** the menu being sold.
+  ///
+  /// The screen reads the pinned menu live from the store, so it only ever
+  /// needed a reason to rebuild — and for months it had none: the dashboard's
+  /// new prices landed in SQLite and stayed invisible until someone restarted
+  /// the app. Bumped on a *change*, never on a tick, so a kiosk that has been
+  /// up all day with an unedited menu rebuilds nothing.
+  final ValueNotifier<int> menuRevision = ValueNotifier<int>(0);
 
   Timer? _timer;
   bool _running = false;
@@ -69,13 +100,23 @@ class KioskCloudCatalog {
   /// One pass: pin what the dashboard published, then put its photos on disk.
   Future<void> refresh() async {
     final PosCloudSync? cloud = sync;
-    if (cloud == null) {
+    if (cloud == null && pinNow == null) {
       _status = KioskCatalogStatus.local;
       await warmPhotos();
       return;
     }
+    if (!canPin()) {
+      // A customer is mid-order. Not an error and not a skipped update — the
+      // periodic tick comes back, and the photos of what IS pinned still get
+      // their pass, which is the half that has to work offline.
+      _status = KioskCatalogStatus.busy;
+      debugPrint('[KioskCatalog] pin deferred — a customer is ordering');
+      await warmPhotos();
+      return;
+    }
+    final int? before = store.activeSnapshot()?.version;
     try {
-      await cloud.start();
+      await (pinNow ?? cloud!.start)();
       _status = KioskCatalogStatus.pinned;
     } on Object {
       // No internet, a refused key, a bundle that failed validation — all the
@@ -85,7 +126,14 @@ class KioskCloudCatalog {
       _status = KioskCatalogStatus.offline;
       debugPrint('[KioskCatalog] pin skipped — selling the pinned menu');
     }
+    // Photos BEFORE the screen is told, so a menu that appears has its
+    // pictures on disk rather than a grid that fills in afterwards.
     await warmPhotos();
+    final int? after = store.activeSnapshot()?.version;
+    if (after != before) {
+      debugPrint('[KioskCatalog] menu v$before → v$after');
+      menuRevision.value++;
+    }
   }
 
   /// Fetches every photo the pinned menu references that is not already local.
@@ -115,6 +163,7 @@ class KioskCloudCatalog {
     _timer?.cancel();
     _timer = null;
     _running = false;
+    menuRevision.dispose();
     await sync?.stop();
   }
 }
@@ -129,6 +178,9 @@ enum KioskCatalogStatus {
 
   /// The dashboard could not be reached; the pinned menu is in force.
   offline,
+
+  /// A customer was mid-order, so the menu was deliberately left alone.
+  busy,
 
   /// This tablet has no cloud credential at all, so the local menu is the only
   /// menu by design.

@@ -23,6 +23,7 @@ import 'kiosk/manager/hub_controller.dart';
 import 'kiosk/printing/print_queue.dart';
 import 'kiosk/printing/socket_printer.dart';
 import 'kiosk/presentation/bootstrap_screen.dart';
+import 'kiosk/state/kiosk_cart.dart';
 import 'kiosk/state/kiosk_session.dart';
 import 'kiosk/catalog/snapshot_checksum_diagnostic.dart';
 
@@ -96,16 +97,25 @@ Future<void> main() async {
   // it cannot fail the launch: `_cloudCatalog` returns null for every
   // misconfiguration and the kiosk sells the menu already on disk.
   final DishPhotoCache? photos = await _photoCache(dir);
+
+  // ⚠ The container is built here, by hand, rather than by `ProviderScope`,
+  // for one reason: the catalogue must be able to ask **the live session**
+  // whether a customer is mid-order before it swaps the menu underneath them
+  // (`KioskCloudCatalog.canPin` — a money rule, see its doc). `late final`
+  // captured in a closure is safe because the closure only ever runs from the
+  // refresh timer, long after `runApp`.
+  late final ProviderContainer container;
+
   final KioskCloudCatalog? catalog = await _cloudCatalog(
     store: store,
     engine: engine,
     identity: identity,
     photos: photos,
+    canPin: () => _kioskIsIdle(container),
   );
 
-  runApp(
-    ProviderScope(
-      overrides: [
+  container = ProviderContainer(
+    overrides: [
         kioskEngineProvider.overrideWithValue(engine),
         kioskCollectionSecretProvider.overrideWithValue(secret),
         kioskPrintQueueProvider.overrideWithValue(_printQueue()),
@@ -122,7 +132,15 @@ Future<void> main() async {
           (Ref ref) =>
               () => ref.read(hubProvider.notifier).publishBoard(),
         ),
+        // What makes the dashboard's menu reach the screen without a restart.
+        if (catalog != null)
+          kioskMenuRevisionProvider.overrideWithValue(catalog.menuRevision),
       ],
+  );
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
       child: const _KioskWithHub(),
     ),
   );
@@ -133,6 +151,22 @@ Future<void> main() async {
   // would be a kiosk with a blank screen every time the shop's line is slow —
   // which is the failure §23 exists to prevent.
   unawaited(catalog?.start());
+}
+
+/// Whether the borne can safely swap its menu **right now**.
+///
+/// Idle means: nobody is part-way through choosing. The attract screen and the
+/// out-of-service screen are both idle; so is a menu screen with an empty cart,
+/// because nothing has been priced yet. Anything else — a composer open, a cart
+/// with lines in it, the counter screen — is a customer who has read prices
+/// that must not change before they pay.
+bool _kioskIsIdle(ProviderContainer container) {
+  final KioskStage stage = container.read(kioskSessionProvider).stage;
+  if (stage == KioskStage.attract || stage == KioskStage.outOfService) {
+    return true;
+  }
+  return stage == KioskStage.menu &&
+      container.read(kioskCartProvider).isEmpty;
 }
 
 /// Where dish photographs live, or null when this build has no cloud host to
@@ -161,6 +195,7 @@ Future<DishPhotoCache?> _photoCache(Directory documents) async {
 /// kiosk still opens, still sells, still prints. Only the dashboard's menu is
 /// absent, and only until someone provisions the device.
 Future<KioskCloudCatalog?> _cloudCatalog({
+  required bool Function() canPin,
   required PosStore store,
   required PosEngine engine,
   required PosDeviceIdentity identity,
@@ -212,6 +247,7 @@ Future<KioskCloudCatalog?> _cloudCatalog({
   return KioskCloudCatalog(
     store: store,
     photos: photos,
+    canPin: canPin,
     sync: PosCloudSync(
       store: store,
       branchId: identity.branchId,

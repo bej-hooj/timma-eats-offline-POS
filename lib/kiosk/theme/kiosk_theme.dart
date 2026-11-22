@@ -103,7 +103,12 @@ abstract final class KioskTheme {
     // naming food is worse than smaller type. 22 pt over two lines carries
     // "Ndolé aux crevettes" whole and is still readable at standing distance.
     titleMedium: TextStyle(
-      fontSize: KioskScale.bodySize,
+      // ⚠ 22 → 17 on 2026-11-22. 22 was sized for a 320 dp tile; the grid now
+      // lays out ~240 dp cards on a wide borne and "Pepper soup de bœuf TIMMA"
+      // wrapped to three lines and ellipsized. This is the ROLE, so the card
+      // and anything else that means "card title" move together — a call site
+      // overriding the size is what the layout test forbids, and rightly.
+      fontSize: KioskScale.cardTitleSize,
       fontWeight: FontWeight.w600,
       color: AppColors.onSurface,
       height: 1.2,

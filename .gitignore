@@ -50,3 +50,6 @@ app.*.map.json
 **/build/
 **/coverage/
 .dart_tool/
+
+# Credentials — never committed
+docs/setup-config.md

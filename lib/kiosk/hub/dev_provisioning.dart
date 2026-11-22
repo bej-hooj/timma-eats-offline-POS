@@ -35,7 +35,7 @@ abstract final class KioskDevProvisioning {
 
   /// The sample menu's version. Deliberately the lowest a snapshot can carry,
   /// so any real bundle from `rpc_menu_snapshot` supersedes it on first fetch.
-  static const int _seedVersion = 1;
+  static const int seedVersion = 1;
 
   /// True when this build was told to pin a **sample** menu.
   ///
@@ -156,7 +156,7 @@ abstract final class KioskDevProvisioning {
       // `snapshot_downgrade`. A tablet that had once run a seeded build could
       // never accept the real menu again, and the only symptom was the DEBUG
       // ribbon staying up. A fixture must never be able to beat real data.
-      version: _seedVersion,
+      version: seedVersion,
       branchId: branchId,
       declaredProductCount: products.length,
       products: products,

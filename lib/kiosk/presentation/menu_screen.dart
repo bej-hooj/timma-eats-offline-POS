@@ -6,6 +6,7 @@ import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import '../catalog/dish_photo_cache.dart';
 import '../theme/kiosk_scale.dart';
+import 'package:timma_kiosk/kiosk/motion/kiosk_fly_to_cart.dart';
 import 'widgets/kiosk_category_pill.dart';
 import 'widgets/kiosk_dish_card.dart';
 
@@ -17,29 +18,54 @@ import 'widgets/kiosk_dish_card.dart';
 class _DishGridMetrics {
   const _DishGridMetrics({required this.cardWidth, required this.cardHeight});
 
-  factory _DishGridMetrics.fit(double availableHeight) {
-    // Below this a card is a thumbnail with an unreadable price from standing
-    // distance; at that point scrolling is the lesser evil.
-    const double minCardHeight = 190;
-    final double usable = availableHeight.isFinite && availableHeight > 0
+  /// ⚠ Sized from the **width first**, then the height.
+  ///
+  /// It used to fit one or two rows into the available HEIGHT and let the card
+  /// width fall out of that. On a 1097 dp borne that produced three enormous
+  /// tiles and barely a screenful of menu — "the cards are too big, the screen
+  /// is very large, get the screen size in consideration" (owner, 2026-11-22).
+  /// A kiosk screen is wide, so the column count has to come from the width,
+  /// the way every reference kiosk lays a menu out: four to six compact tiles
+  /// a customer can take in at a glance.
+  ///
+  /// [_idealCardWidth] is a TARGET, not a minimum: the columns are whole, so
+  /// the real width lands near it and the cards still fill the row edge to
+  /// edge at any screen size.
+  factory _DishGridMetrics.fit(double availableWidth, double availableHeight) {
+    const double idealCardWidth = 200;
+    const double minCardWidth = 168;
+    const double maxCardWidth = KioskScale.dishCardWidth;
+
+    final double width = availableWidth.isFinite && availableWidth > 0
+        ? availableWidth
+        : idealCardWidth * 4;
+
+    // Whole columns, at least two — a single enormous column is the failure
+    // this is replacing.
+    int columns = (width / idealCardWidth).round().clamp(2, 8);
+    double cardWidth = (width - (KioskScale.gapLg * (columns - 1))) / columns;
+
+    // A screen so narrow that the ideal count would squeeze past legibility
+    // drops a column rather than shrinking the type.
+    while (cardWidth < minCardWidth && columns > 2) {
+      columns -= 1;
+      cardWidth = (width - (KioskScale.gapLg * (columns - 1))) / columns;
+    }
+    if (cardWidth > maxCardWidth) {
+      cardWidth = maxCardWidth;
+    }
+
+    double cardHeight = cardWidth / KioskScale.dishCardAspectRatio;
+
+    // And never taller than the viewport can show in one go: a card that does
+    // not fit on screen is a card a standing customer has to scroll to read.
+    final double usableHeight = availableHeight.isFinite && availableHeight > 0
         ? availableHeight
-        : KioskScale.dishCardHeight;
-
-    // Two rows when they genuinely fit, otherwise one.
-    final int rows = usable >= (minCardHeight * 2) + KioskScale.gapLg ? 2 : 1;
-    final double perRow = (usable - (KioskScale.gapLg * (rows - 1))) / rows;
-    final double cardHeight = perRow < minCardHeight ? minCardHeight : perRow;
-
-    // The app's 180 × 208 proportion, kept whichever way the height lands. The
-    // card is never made wider than the kiosk's own maximum, or a two-dish menu
-    // would stretch into two billboards.
-    final double proportional = cardHeight * KioskScale.dishCardAspectRatio;
-    return _DishGridMetrics(
-      cardWidth: proportional > KioskScale.dishCardWidth
-          ? KioskScale.dishCardWidth
-          : proportional,
-      cardHeight: cardHeight,
-    );
+        : cardHeight;
+    if (cardHeight > usableHeight) {
+      cardHeight = usableHeight;
+    }
+    return _DishGridMetrics(cardWidth: cardWidth, cardHeight: cardHeight);
   }
 
   final double cardWidth;
@@ -59,6 +85,7 @@ class KioskMenuScreen extends StatefulWidget {
     required this.onPick,
     required this.onToggleLanguage,
     this.photoCache,
+    this.onQuickAdd,
     super.key,
   });
 
@@ -69,6 +96,15 @@ class KioskMenuScreen extends StatefulWidget {
   final DishPhotoCache? photoCache;
   final void Function(SnapshotProduct product) onPick;
 
+  /// One tap from the grid into the basket, with the bubble flying from the
+  /// "+" that was pressed (owner, 2026-11-22). The `Offset` is where the flight
+  /// starts, in global coordinates.
+  ///
+  /// ⚠ Offered **only** for a dish with nothing to decide — see
+  /// [_canQuickAdd]. Skipping a required group would put a line in the basket
+  /// the kitchen cannot cook, which is the composer's whole reason to exist.
+  final void Function(SnapshotProduct product, Offset from)? onQuickAdd;
+
   /// FR ↔ EN. A bilingual market means the kiosk cannot assume; the toggle is
   /// on the menu header where a customer looks first, and it resets to French
   /// with the session because the next person is a different person.
@@ -78,8 +114,30 @@ class KioskMenuScreen extends StatefulWidget {
   State<KioskMenuScreen> createState() => _KioskMenuScreenState();
 }
 
+/// A dish a customer can put in the basket without being asked anything.
+///
+/// A variant choice or any group with `minSelect > 0` is a question, and a
+/// question skipped is a wrong order. Optional groups are deliberately NOT a
+/// blocker: the customer can still tap the card to add a side, and refusing
+/// the "+" over an optional extra would make most of the menu feel broken.
+bool _canQuickAdd(SnapshotProduct product) {
+  if (!product.available) {
+    return false;
+  }
+  if (product.variants.length > 1) {
+    return false;
+  }
+  return product.optionGroups.every(
+    (SnapshotOptionGroup g) => g.minSelect <= 0,
+  );
+}
+
 class _KioskMenuScreenState extends State<KioskMenuScreen> {
   final TextEditingController _search = TextEditingController();
+
+  /// One key per dish, so the bubble can start from the "+" that was actually
+  /// tapped rather than from the middle of the screen.
+  final Map<String, GlobalKey> _addKeys = <String, GlobalKey>{};
 
   /// null = "Tout", the strip's first pill. Exactly one pill is lit at a time,
   /// like the app's "Notre menu".
@@ -293,6 +351,7 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                   );
                 }
                 final _DishGridMetrics metrics = _DishGridMetrics.fit(
+                  constraints.maxWidth,
                   constraints.maxHeight,
                 );
                 return GridView.builder(
@@ -333,6 +392,21 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                       // for a dish the kitchen cannot make (§K4 rule 4).
                       onTap: product.available
                           ? () => widget.onPick(product)
+                          : null,
+                      quickAddKey: _addKeys.putIfAbsent(
+                        product.productId,
+                        GlobalKey.new,
+                      ),
+                      onQuickAdd:
+                          widget.onQuickAdd != null && _canQuickAdd(product)
+                          ? () {
+                              final GlobalKey key =
+                                  _addKeys[product.productId]!;
+                              widget.onQuickAdd!(
+                                product,
+                                centerOf(key) ?? Offset.zero,
+                              );
+                            }
                           : null,
                     );
                   },

@@ -34,7 +34,29 @@ abstract final class KioskScale {
   static const double radiusLg = 32;
 
   /// Dish photography carries this surface, so cards are generous.
-  static const double dishCardWidth = 320;
+  /// ⚠ Narrowed from 320 on 2026-11-22. On the GM92 (1097 dp wide) a 320 dp
+  /// card gave three-and-a-bit columns of very large tiles — the owner's words
+  /// were "the cards are too big" — against reference kiosks that put four to
+  /// six compact tiles across and let the PHOTOGRAPH do the selling. 232 dp
+  /// fits four on the GM92 with the grid's gutters and still clears the 72 dp
+  /// touch rule several times over.
+  static const double dishCardWidth = 212;
+
+  /// The dish name on a card. **Not** [bodySize]: 22 pt was sized for a 320 dp
+  /// tile and wrapped "Pepper soup de bœuf TIMMA" onto three lines in a 232 dp
+  /// one. 17 matches the customer app's card title (its `titleMedium` is 18 at
+  /// a smaller physical size), which is the whole point — the owner wants one
+  /// menu, drawn twice.
+  static const double cardTitleSize = 17;
+
+  /// The price on a card: the same size as the name but heavier and in the
+  /// brand green, so the eye reads name-then-price without a size jump.
+  static const double cardPriceSize = 17;
+
+  /// Sold-out, and any other badge drawn over a photograph. Deliberately the
+  /// smallest type on the screen: a barrier has to be legible, not loud, and
+  /// at `labelLarge` it covered a third of the picture.
+  static const double badgeSize = 13;
 
   /// The customer app's dish-card proportion, 180 × 208, kept exactly.
   ///

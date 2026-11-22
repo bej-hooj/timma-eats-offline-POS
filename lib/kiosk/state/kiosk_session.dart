@@ -107,6 +107,30 @@ class KioskSessionController extends Notifier<KioskSessionState> {
       _idle?.cancel();
     });
     final PosEngine engine = ref.read(kioskEngineProvider);
+
+    // ⚠ A fresh tablet has nothing pinned at its first launch, so it opens
+    // out-of-service — and this used to be decided **once**, which meant the
+    // dashboard's catalogue could arrive thirty seconds later and the borne
+    // would still be showing *Borne indisponible* to every customer until
+    // someone restarted it. A kiosk that has a menu must sell.
+    final ValueListenable<int> revision = ref.read(kioskMenuRevisionProvider);
+    void onMenuChanged() {
+      if (_disposed) {
+        return;
+      }
+      final bool haveMenu = engine.pinnedMenu != null;
+      if (haveMenu && state.stage == KioskStage.outOfService) {
+        state = const KioskSessionState(stage: KioskStage.attract);
+      } else if (!haveMenu && state.stage == KioskStage.attract) {
+        // The other direction is just as real: a branch whose whole menu is
+        // withdrawn must stop taking orders rather than sell from a stale one.
+        state = const KioskSessionState(stage: KioskStage.outOfService);
+      }
+    }
+
+    revision.addListener(onMenuChanged);
+    ref.onDispose(() => revision.removeListener(onMenuChanged));
+
     return KioskSessionState(
       stage: engine.pinnedMenu == null
           ? KioskStage.outOfService
@@ -353,6 +377,24 @@ final Provider<PosEngine> kioskEngineProvider = Provider<PosEngine>(
 /// every slip already in a customer's hand.
 final Provider<BranchCollectionSecret?> kioskCollectionSecretProvider =
     Provider<BranchCollectionSecret?>((Ref ref) => null);
+
+/// Ticks once each time the dashboard's catalogue replaces the menu on sale.
+///
+/// ⚠ **This is what makes "the borne updates from the dashboard" true.** The
+/// menu is read live from the store, so the screen was always one rebuild away
+/// from the dashboard's new prices — and nothing ever asked for that rebuild.
+/// A new catalogue landed in SQLite every 15 minutes and stayed invisible until
+/// somebody restarted the app.
+///
+/// Overridden at the shell with the catalogue's own notifier. The default never
+/// ticks, which is correct for a tablet with no cloud credential: its menu
+/// genuinely cannot change while it runs.
+final Provider<ValueListenable<int>> kioskMenuRevisionProvider =
+    Provider<ValueListenable<int>>((Ref ref) {
+      final ValueNotifier<int> never = ValueNotifier<int>(0);
+      ref.onDispose(never.dispose);
+      return never;
+    });
 
 /// The dish photographs on disk, or null on a kiosk with no cache configured.
 ///

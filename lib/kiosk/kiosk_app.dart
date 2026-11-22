@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:timma_kiosk/design/app_tokens.dart';
@@ -6,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/l10n/app_localizations.dart';
+import 'catalog/dish_photo_cache.dart';
+import 'motion/kiosk_fly_to_cart.dart';
 import 'printing/slip.dart';
 import 'hub/dev_provisioning.dart';
 import 'manager/manager_gate.dart';
@@ -51,23 +56,47 @@ class KioskApp extends ConsumerWidget {
       // no visible marker cost a whole session of chasing "missing images" that
       // were never configured. If the prices on screen are not real, the screen
       // says so.
-      builder: (BuildContext context, Widget? child) =>
-          KioskDevProvisioning.seedMenu && child != null
-          ? _SampleMenuRibbon(child: child)
-          : (child ?? const SizedBox.shrink()),
+      builder: (BuildContext context, Widget? child) => child == null
+          ? const SizedBox.shrink()
+          : _SampleMenuRibbon(child: child),
       home: const KioskShell(),
     );
   }
 }
 
-/// A permanent, unmissable band across a debug build running on sample data.
-class _SampleMenuRibbon extends StatelessWidget {
+/// A permanent, unmissable band across a kiosk whose prices are **not real**.
+///
+/// ⚠ It used to key on `KioskDevProvisioning.seedMenu` — the *build flag* — and
+/// that is backwards. The seed carries the lowest version a snapshot can hold
+/// precisely so the dashboard's catalogue supersedes it on the first fetch, so
+/// a seeded build that reached the internet was selling **real prices under a
+/// red band saying they were fake**. A marker that cries wolf is worse than
+/// none: it is the one people learn to read past.
+///
+/// It now states a fact about the menu **being sold**: the band is up when, and
+/// only when, the active snapshot is the sample one.
+class _SampleMenuRibbon extends ConsumerWidget {
   const _SampleMenuRibbon({required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Rebuilt whenever a pin changes the menu, so the band disappears the
+    // moment the real catalogue takes over — no restart.
+    return ValueListenableBuilder<int>(
+      valueListenable: ref.watch(kioskMenuRevisionProvider),
+      builder: (BuildContext context, _, Widget? _) {
+        final MenuSnapshot? menu = ref.read(kioskEngineProvider).pinnedMenu;
+        if (menu == null || menu.version != KioskDevProvisioning.seedVersion) {
+          return child;
+        }
+        return _band(context);
+      },
+    );
+  }
+
+  Widget _band(BuildContext context) {
     return Stack(
       children: <Widget>[
         child,
@@ -294,6 +323,9 @@ SlipLabels _slipLabels(BuildContext context) {
 }
 
 class _MenuWithCartBar extends ConsumerWidget {
+  /// Marks the cart bar so the add-to-cart bubble knows where to land.
+  static final GlobalKey cartBarKey = GlobalKey();
+
   const _MenuWithCartBar({
     required this.onPick,
     required this.onCart,
@@ -305,20 +337,68 @@ class _MenuWithCartBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MenuSnapshot? menu = ref.read(kioskEngineProvider).pinnedMenu;
+    // ⚠ The menu lives in SQLite and `pinnedMenu` reads it live, so this
+    // widget was always one rebuild away from the dashboard's new prices — and
+    // nothing ever asked for that rebuild, which is why an edited menu only
+    // appeared after an app restart. `ref.watch` on the provider cannot do it:
+    // the notifier's identity never changes, only its value. So the listenable
+    // is watched here, during build, and the menu is re-read on each tick.
+    final ValueListenable<int> revision = ref.watch(kioskMenuRevisionProvider);
+    final PosEngine engine = ref.read(kioskEngineProvider);
+    final KioskCartState cart = ref.watch(kioskCartProvider);
+    final DishPhotoCache? photos = ref.watch(kioskPhotoCacheProvider);
+    final VoidCallback onToggleLanguage = ref
+        .read(kioskLocaleProvider.notifier)
+        .toggle;
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final KioskCartController cartController = ref.read(
+      kioskCartProvider.notifier,
+    );
+    return ValueListenableBuilder<int>(
+      valueListenable: revision,
+      builder: (BuildContext context, _, Widget? _) => _body(
+        context: context,
+        menu: engine.pinnedMenu,
+        cart: cart,
+        photos: photos,
+        onToggleLanguage: onToggleLanguage,
+        l10n: l10n,
+        cartController: cartController,
+      ),
+    );
+  }
+
+  Widget _body({
+    required BuildContext context,
+    required MenuSnapshot? menu,
+    required KioskCartState cart,
+    required DishPhotoCache? photos,
+    required VoidCallback onToggleLanguage,
+    required AppLocalizations l10n,
+    required KioskCartController cartController,
+  }) {
     if (menu == null) {
       return const KioskOutOfServiceScreen();
     }
-    final KioskCartState cart = ref.watch(kioskCartProvider);
-    final AppLocalizations l10n = AppLocalizations.of(context)!;
     return Column(
       children: <Widget>[
         Expanded(
           child: KioskMenuScreen(
             menu: menu,
             onPick: onPick,
-            onToggleLanguage: ref.read(kioskLocaleProvider.notifier).toggle,
-            photoCache: ref.watch(kioskPhotoCacheProvider),
+            onToggleLanguage: onToggleLanguage,
+            photoCache: photos,
+            // ⚠ The basket is written FIRST and the bubble is decoration over
+            // a change that already happened. Tying the line to the end of a
+            // 600 ms animation would put a lie between the tap and the truth,
+            // and an idle timeout mid-flight would lose the dish entirely.
+            onQuickAdd: (SnapshotProduct product, Offset from) {
+              cartController.add(product: product, quantity: 1);
+              final Offset? to = centerOf(cartBarKey);
+              if (to != null) {
+                unawaited(kioskFlyToCart(context, from: from, to: to));
+              }
+            },
           ),
         ),
         if (!cart.isEmpty)
@@ -330,6 +410,7 @@ class _MenuWithCartBar extends ConsumerWidget {
               KioskScale.gapLg,
             ),
             child: SizedBox(
+              key: cartBarKey,
               width: double.infinity,
               child: FilledButton(
                 onPressed: onCart,

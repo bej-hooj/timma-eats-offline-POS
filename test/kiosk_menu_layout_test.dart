@@ -153,12 +153,19 @@ void main() {
     });
   }
 
-  testWidgets('the photo is exactly half of the card, at every size', (
+  testWidgets('the photograph absorbs the card\'s slack, and never the text', (
     tester,
   ) async {
-    // The rule the app card encodes as two equal `Expanded`s. Asserted rather
-    // than trusted because every earlier attempt to guess a photo height was
-    // wrong, and a card that drifts to 54% photo squeezes the price out.
+    // ⚠ This asserted "exactly half" until 2026-11-22, when the halves were
+    // replaced: the text block now HUGS its three lines and the photograph
+    // takes whatever is left. The old split left a band of empty cream between
+    // the dish name and the cooking time on a tall card — reported off the
+    // GM92 as "too big space gap between the title and the cooking time".
+    //
+    // The rule the 50 % constant was protecting is still the rule, and it is
+    // what is asserted here instead of the mechanism: the picture must still
+    // dominate the card, and it must never squeeze the price off it. That is
+    // why this is two expectations and not a ratio.
     for (final (Size size, double ratio) in devices.values) {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -176,8 +183,21 @@ void main() {
       );
       expect(
         photo.height,
-        closeTo(card.height / 2, 1.5),
-        reason: 'photo ${photo.height} of card ${card.height} at $size',
+        greaterThan(card.height * 0.4),
+        reason: 'the photograph sells the dish — it must still dominate: '
+            '${photo.height} of ${card.height} at $size',
+      );
+      // And nothing the text block holds may hang outside the card.
+      final Rect price = tester.getRect(
+        find.descendant(
+          of: find.byType(KioskDishCard).first,
+          matching: find.textContaining('FCFA'),
+        ),
+      );
+      expect(
+        card.bottom - price.bottom,
+        greaterThanOrEqualTo(-0.5),
+        reason: 'the price fell off the card at $size',
       );
     }
     addTearDown(tester.view.reset);
