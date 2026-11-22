@@ -19,6 +19,7 @@ class HubState {
     this.code,
     this.codeExpiresAt,
     this.pairedBoards = 0,
+    this.approvals = const <PendingApproval>[],
     this.error,
   });
 
@@ -41,6 +42,14 @@ class HubState {
   /// Boards currently authenticated on the socket.
   final int pairedBoards;
 
+  /// Cuisines that asked to pair with one tap and are waiting for an answer.
+  ///
+  /// ⚠ Each carries six digits that MUST match the number on the asking
+  /// tablet's own screen. That comparison is the entire authentication of the
+  /// tap path — see `pairingComparisonDigits`. A manager who approves without
+  /// looking is approving whatever is on the wifi.
+  final List<PendingApproval> approvals;
+
   /// A stable, human-facing failure code. Never an exception's message.
   final String? error;
 
@@ -50,6 +59,7 @@ class HubState {
     String? code,
     DateTime? codeExpiresAt,
     int? pairedBoards,
+    List<PendingApproval>? approvals,
     String? error,
     bool clearCode = false,
     bool clearError = false,
@@ -59,6 +69,12 @@ class HubState {
     code: clearCode ? null : (code ?? this.code),
     codeExpiresAt: clearCode ? null : (codeExpiresAt ?? this.codeExpiresAt),
     pairedBoards: pairedBoards ?? this.pairedBoards,
+    // ⚠ Cleared with the code: the approvals belong to THAT window. Carrying
+    // them past it would offer a manager a request made against a window they
+    // have already closed.
+    approvals: clearCode
+        ? const <PendingApproval>[]
+        : (approvals ?? this.approvals),
     error: clearError ? null : (error ?? this.error),
   );
 }
@@ -177,6 +193,17 @@ class HubController extends Notifier<HubState> {
         if (peers != state.pairedBoards) {
           state = state.copyWith(pairedBoards: peers);
         }
+        // Polled on the same tick as the peer count rather than through a
+        // second stream: the manager screen already wakes once a second, and
+        // one timer is easier to reason about than two.
+        final List<PendingApproval> waiting = live.pendingApprovals;
+        if (waiting.length != state.approvals.length ||
+            !waiting.every(
+              (PendingApproval a) =>
+                  state.approvals.any((PendingApproval b) => b.id == a.id),
+            )) {
+          state = state.copyWith(approvals: waiting);
+        }
       });
 
       // And the address is re-checked for as long as the hub runs, so a new
@@ -286,6 +313,34 @@ class HubController extends Notifier<HubState> {
   /// Drops the code from the screen and from state once it expires or the
   /// manager closes the sheet. The registry keeps its own expiry; this is the
   /// visible half.
+  /// The manager tapped **Accepter** beside a waiting cuisine.
+  ///
+  /// Approving closes the pairing window — one window pairs one tablet — so
+  /// the code and every other waiting request go with it.
+  Future<void> approve(String requestId) async {
+    final LanHubServer? live = _server;
+    if (live == null) {
+      return;
+    }
+    try {
+      await live.approvePairing(requestId);
+      state = state.copyWith(clearCode: true, clearError: true);
+    } on Object {
+      state = state.copyWith(error: HubErrorCode.pairingFailed);
+    }
+  }
+
+  /// The manager tapped **Refuser**. The cuisine is told, rather than left
+  /// spinning until a timeout it cannot explain.
+  void refuse(String requestId) {
+    final LanHubServer? live = _server;
+    if (live == null) {
+      return;
+    }
+    live.refusePairing(requestId);
+    state = state.copyWith(approvals: live.pendingApprovals);
+  }
+
   void clearCode() => state = state.copyWith(clearCode: true);
 
   /// Pushes the current board to every authenticated kitchen.

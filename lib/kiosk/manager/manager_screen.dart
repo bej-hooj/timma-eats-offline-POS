@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_link/pos_link.dart';
 
@@ -80,6 +82,24 @@ class _KioskManagerScreenState extends ConsumerState<KioskManagerScreen> {
                   ],
                   _HubCard(hub: hub),
                   const SizedBox(height: KioskScale.gapLg),
+                  // ⚠ Requests first. When a cuisine is waiting, the decision
+                  // is the only thing on this screen that matters, and a
+                  // manager hunting for it under a code they no longer need to
+                  // read is how a cook ends up typing six digits anyway.
+                  for (final PendingApproval approval in hub.approvals)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: KioskScale.gapLg,
+                      ),
+                      child: _ApprovalCard(
+                        approval: approval,
+                        onAccept: () => ref
+                            .read(hubProvider.notifier)
+                            .approve(approval.id),
+                        onRefuse: () =>
+                            ref.read(hubProvider.notifier).refuse(approval.id),
+                      ),
+                    ),
                   if (hub.code != null)
                     _PairingCodeCard(
                       code: hub.code!,
@@ -251,16 +271,48 @@ class _PairingCodeCardState extends State<_PairingCodeCard> {
         padding: const EdgeInsets.all(KioskScale.gapLg),
         child: Column(
           children: <Widget>[
-            Text(l10n.kioskManagerCodeTitle, style: theme.textTheme.titleLarge),
+            // ⚠⚠ The window LEADS with the tap, not the code.
+            //
+            // Owner, looking at this very screen: *"why i still see the
+            // pairing code procedure as the main one?"* — because it was still
+            // the headline here, in 96 pt, with the tap path nowhere on the
+            // borne at all until a request arrived. The code is the second
+            // procedure now, so it reads as one: small, below, after the
+            // instruction that actually applies.
+            Text(
+              l10n.kioskManagerPairWaiting,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: KioskScale.gap),
+            Text(
+              l10n.kioskManagerPairWaitingBody,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: KioskScale.gapLg),
+            const Divider(),
             const SizedBox(height: KioskScale.gapMd),
+            Text(
+              l10n.kioskManagerPairCodeFallback,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: KioskScale.gap),
             Text(
               // Spaced so it can be read out loud without losing a digit.
               widget.code.split('').join(' '),
               style: TextStyle(
-                fontSize: KioskScale.headlineSize * 1.6,
-                fontWeight: FontWeight.w800,
+                // Half the size it was: still readable across a counter,
+                // no longer the thing the eye lands on first.
+                fontSize: KioskScale.headlineSize * 0.8,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 2,
-                color: theme.colorScheme.primary,
+                color: expired
+                    ? theme.colorScheme.error
+                    : AppColors.textMuted,
               ),
             ),
             const SizedBox(height: KioskScale.gap),
@@ -268,15 +320,11 @@ class _PairingCodeCardState extends State<_PairingCodeCard> {
               expired
                   ? l10n.kioskManagerCodeExpired
                   : l10n.kioskManagerCodeLeft(left.inSeconds),
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: expired ? theme.colorScheme.error : null,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: expired
+                    ? theme.colorScheme.error
+                    : AppColors.textMuted,
               ),
-            ),
-            const SizedBox(height: KioskScale.gapMd),
-            Text(
-              l10n.kioskManagerCodeHint,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge,
             ),
             const SizedBox(height: KioskScale.gapMd),
             OutlinedButton(
@@ -287,5 +335,108 @@ class _PairingCodeCardState extends State<_PairingCodeCard> {
         ),
       ),
     );
+  }
+}
+
+
+/// A cuisine waiting to be let in, and the number that says it is the right
+/// one.
+///
+/// ⚠⚠ **The six digits are not decoration.** With no code typed, the key
+/// agreement is authenticated by a human confirming that the same number
+/// appears on both screens. A man in the middle has to run two key agreements,
+/// so his numbers differ — but only if somebody actually looks. The screen
+/// therefore leads with the number and says what to do with it, rather than
+/// putting a green button where a thumb already is.
+class _ApprovalCard extends StatelessWidget {
+  const _ApprovalCard({
+    required this.approval,
+    required this.onAccept,
+    required this.onRefuse,
+  });
+
+  final PendingApproval approval;
+  final VoidCallback onAccept;
+  final VoidCallback onRefuse;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final ThemeData theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(KioskScale.gapLg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              l10n.kioskManagerApprovalTitle,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: KioskScale.gap),
+            Text(
+              approval.label,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: KioskScale.gapMd),
+            Text(
+              // Spaced in pairs: six digits read as one number are compared
+              // digit by digit and misread; "47 82 15" is three glances.
+              _spaced(approval.comparisonDigits),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: KioskScale.headlineSize,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 6,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: KioskScale.gap),
+            Text(
+              l10n.kioskManagerApprovalCompare,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: KioskScale.gapLg),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: SizedBox(
+                    height: KioskScale.minTarget,
+                    child: OutlinedButton(
+                      onPressed: onRefuse,
+                      child: Text(l10n.kioskManagerApprovalRefuse),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: KioskScale.gapMd),
+                Expanded(
+                  child: SizedBox(
+                    height: KioskScale.minTarget,
+                    child: FilledButton(
+                      onPressed: onAccept,
+                      child: Text(l10n.kioskManagerApprovalAccept),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _spaced(String digits) {
+    final StringBuffer out = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && i % 2 == 0) {
+        out.write('\u2009');
+      }
+      out.write(digits[i]);
+    }
+    return out.toString();
   }
 }

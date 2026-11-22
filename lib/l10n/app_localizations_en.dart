@@ -260,4 +260,31 @@ class AppLocalizationsEn extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String get kioskManagerApprovalTitle => 'A kitchen is asking to pair';
+
+  @override
+  String get kioskManagerApprovalCompare =>
+      'Check this number is the same on the kitchen tablet.';
+
+  @override
+  String get kioskManagerApprovalAccept => 'Accept';
+
+  @override
+  String get kioskManagerApprovalRefuse => 'Refuse';
+
+  @override
+  String get kioskManagerPairOrCode =>
+      'Or type this code on the kitchen tablet';
+
+  @override
+  String get kioskManagerPairWaiting => 'Waiting for a kitchen';
+
+  @override
+  String get kioskManagerPairWaitingBody =>
+      'On the kitchen tablet, tap “Pair with one tap”.';
+
+  @override
+  String get kioskManagerPairCodeFallback => 'Or type this code on the kitchen';
 }

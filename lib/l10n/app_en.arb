@@ -160,11 +160,19 @@
   },
   "kioskDishSpiceLevel": "{level, select, 1{Mildly spicy} 2{Spicy} 3{Very spicy} other{Not spicy}}",
   "@kioskDishSpiceLevel": {
-    "description": "Screen-reader name for the chilli. A `select`, not a `plural`. \u26a0 The CARD draws ONE chilli whatever the level; the composer is where a level belongs. Level 0 draws nothing at all.",
+    "description": "Screen-reader name for the chilli. A `select`, not a `plural`. ⚠ The CARD draws ONE chilli whatever the level; the composer is where a level belongs. Level 0 draws nothing at all.",
     "placeholders": {
       "level": {
         "type": "String"
       }
     }
-  }
+  },
+  "kioskManagerApprovalTitle": "A kitchen is asking to pair",
+  "kioskManagerApprovalCompare": "Check this number is the same on the kitchen tablet.",
+  "kioskManagerApprovalAccept": "Accept",
+  "kioskManagerApprovalRefuse": "Refuse",
+  "kioskManagerPairOrCode": "Or type this code on the kitchen tablet",
+  "kioskManagerPairWaiting": "Waiting for a kitchen",
+  "kioskManagerPairWaitingBody": "On the kitchen tablet, tap “Pair with one tap”.",
+  "kioskManagerPairCodeFallback": "Or type this code on the kitchen"
 }

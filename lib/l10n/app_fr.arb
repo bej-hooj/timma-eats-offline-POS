@@ -160,11 +160,19 @@
   },
   "kioskDishSpiceLevel": "{level, select, 1{Peu épicé} 2{Épicé} 3{Très épicé} other{Non épicé}}",
   "@kioskDishSpiceLevel": {
-    "description": "Screen-reader name for the chilli. A `select`, not a `plural`. \u26a0 The CARD draws ONE chilli whatever the level; the composer is where a level belongs. Level 0 draws nothing at all.",
+    "description": "Screen-reader name for the chilli. A `select`, not a `plural`. ⚠ The CARD draws ONE chilli whatever the level; the composer is where a level belongs. Level 0 draws nothing at all.",
     "placeholders": {
       "level": {
         "type": "String"
       }
     }
-  }
+  },
+  "kioskManagerApprovalTitle": "Une cuisine demande à s'apparier",
+  "kioskManagerApprovalCompare": "Vérifiez que ce nombre est le même sur la tablette cuisine.",
+  "kioskManagerApprovalAccept": "Accepter",
+  "kioskManagerApprovalRefuse": "Refuser",
+  "kioskManagerPairOrCode": "Ou saisissez ce code sur la tablette cuisine",
+  "kioskManagerPairWaiting": "En attente d'une cuisine",
+  "kioskManagerPairWaitingBody": "Sur la tablette cuisine, touchez « Apparier en un geste ».",
+  "kioskManagerPairCodeFallback": "Ou saisissez ce code sur la cuisine"
 }

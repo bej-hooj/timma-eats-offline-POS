@@ -263,4 +263,32 @@ class AppLocalizationsFr extends AppLocalizations {
     });
     return '$_temp0';
   }
+
+  @override
+  String get kioskManagerApprovalTitle => 'Une cuisine demande à s\'apparier';
+
+  @override
+  String get kioskManagerApprovalCompare =>
+      'Vérifiez que ce nombre est le même sur la tablette cuisine.';
+
+  @override
+  String get kioskManagerApprovalAccept => 'Accepter';
+
+  @override
+  String get kioskManagerApprovalRefuse => 'Refuser';
+
+  @override
+  String get kioskManagerPairOrCode =>
+      'Ou saisissez ce code sur la tablette cuisine';
+
+  @override
+  String get kioskManagerPairWaiting => 'En attente d\'une cuisine';
+
+  @override
+  String get kioskManagerPairWaitingBody =>
+      'Sur la tablette cuisine, touchez « Apparier en un geste ».';
+
+  @override
+  String get kioskManagerPairCodeFallback =>
+      'Ou saisissez ce code sur la cuisine';
 }

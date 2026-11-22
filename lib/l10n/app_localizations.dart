@@ -535,6 +535,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{level, select, 1{Peu épicé} 2{Épicé} 3{Très épicé} other{Non épicé}}'**
   String kioskDishSpiceLevel(String level);
+
+  /// No description provided for @kioskManagerApprovalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une cuisine demande à s\'apparier'**
+  String get kioskManagerApprovalTitle;
+
+  /// No description provided for @kioskManagerApprovalCompare.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez que ce nombre est le même sur la tablette cuisine.'**
+  String get kioskManagerApprovalCompare;
+
+  /// No description provided for @kioskManagerApprovalAccept.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accepter'**
+  String get kioskManagerApprovalAccept;
+
+  /// No description provided for @kioskManagerApprovalRefuse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser'**
+  String get kioskManagerApprovalRefuse;
+
+  /// No description provided for @kioskManagerPairOrCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ou saisissez ce code sur la tablette cuisine'**
+  String get kioskManagerPairOrCode;
+
+  /// No description provided for @kioskManagerPairWaiting.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente d\'une cuisine'**
+  String get kioskManagerPairWaiting;
+
+  /// No description provided for @kioskManagerPairWaitingBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sur la tablette cuisine, touchez « Apparier en un geste ».'**
+  String get kioskManagerPairWaitingBody;
+
+  /// No description provided for @kioskManagerPairCodeFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ou saisissez ce code sur la cuisine'**
+  String get kioskManagerPairCodeFallback;
 }
 
 class _AppLocalizationsDelegate
