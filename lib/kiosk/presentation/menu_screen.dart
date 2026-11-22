@@ -210,6 +210,12 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
         )
         .toList(growable: false);
 
+    // ⚠ A kiosk screen is whatever the restaurant mounted. The stacked icon
+    // tile needs 112 dp of strip; on a 411 dp-tall landscape handset that
+    // comes straight off the dish grid and the page overflows. Below this the
+    // strip falls back to icon-beside-label at the ordinary touch height.
+    final bool compactCategories = MediaQuery.sizeOf(context).height < 560;
+
     return Padding(
       padding: const EdgeInsets.all(KioskScale.gapXl),
       child: Column(
@@ -220,7 +226,19 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
           // with, and a second row would come straight off the dish cards.
           Row(
             children: <Widget>[
-              Text(l10n.kioskMenuTitle, style: theme.textTheme.headlineLarge),
+              // ⚠ `Flexible`, not a bare `Text`. The title is the one thing on
+              // this row that can give way, and it has to: the basket panel
+              // takes 340 dp off the menu pane, and at 757 dp an unyielding
+              // 40 pt heading pushed the row 6 px over — caught by a widget
+              // test at the borne's real width, not on the device.
+              Flexible(
+                child: Text(
+                  l10n.kioskMenuTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineLarge,
+                ),
+              ),
               const SizedBox(width: KioskScale.gapLg),
               Expanded(
                 child: TextField(
@@ -275,7 +293,15 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
             SizedBox(
               // One row, horizontally scrollable — the strip must never wrap
               // onto a second line and eat the dish grid's height.
-              height: KioskScale.minTarget,
+              //
+              // ⚠ `minTarget` (72) was the height of a one-line pill. The tile
+              // now stacks an icon, the name and the dish count, and at 72 it
+              // overflowed by 30 px — caught by the filter tests, not on the
+              // device. Sized to the tile, with the touch rule still met
+              // several times over.
+              height: compactCategories
+                  ? KioskScale.minTarget
+                  : KioskScale.categoryTileHeight,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: categories.length + 1,
@@ -286,6 +312,11 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                     return KioskCategoryPill(
                       label: l10n.kioskCategoryAll,
                       selected: selected == null,
+                      // ⚠ The WHOLE menu, not what the search has narrowed to.
+                      // A count that moved while someone typed would be a
+                      // second, quieter search result.
+                      count: products.length,
+                      compact: compactCategories,
                       onTap: () => setState(() => _categoryId = null),
                     );
                   }
@@ -293,6 +324,13 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                   return KioskCategoryPill(
                     label: french ? category.nameFr : category.nameEn,
                     selected: selected == category.categoryId,
+                    count: products
+                        .where(
+                          (SnapshotProduct p) =>
+                              p.categoryId == category.categoryId,
+                        )
+                        .length,
+                    compact: compactCategories,
                     onTap: () =>
                         setState(() => _categoryId = category.categoryId),
                   );

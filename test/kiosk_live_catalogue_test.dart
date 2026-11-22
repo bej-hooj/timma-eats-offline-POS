@@ -11,6 +11,7 @@ import 'package:timma_kiosk/kiosk/hub/dev_provisioning.dart';
 import 'package:timma_kiosk/kiosk/kiosk_app.dart';
 import 'package:timma_kiosk/kiosk/presentation/attract_screen.dart';
 import 'package:timma_kiosk/kiosk/presentation/composer_sheet.dart';
+import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_dish_card.dart';
 import 'package:timma_kiosk/kiosk/presentation/menu_screen.dart';
 import 'package:timma_kiosk/kiosk/state/kiosk_session.dart';
 
@@ -252,7 +253,16 @@ void main() {
       // choice would put a line in the basket the kitchen cannot cook.
       expect(find.text('Koki'), findsOneWidget);
       expect(find.text('Poulet DG'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      // ⚠ Scoped to the CARDS. The basket panel has "+" steps of its own, so
+      // a bare `find.byIcon` would start counting those the moment a line
+      // exists and this test would pass for the wrong reason.
+      expect(
+        find.descendant(
+          of: find.byType(KioskDishCard),
+          matching: find.byIcon(Icons.add),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the "+" puts the dish straight in the basket', (tester) async {
@@ -264,7 +274,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(KioskComposerSheet), findsNothing);
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(KioskDishCard),
+          matching: find.byIcon(Icons.add),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // No composer in the way, and the cart bar is showing one line.

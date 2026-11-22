@@ -133,3 +133,55 @@ out-of-service, with an empty cart.
 - ⚠ `PosOrder` has no `fire_at`; the cuisine's *Programmées* lane cannot fill.
   Do not point this board at a branch taking scheduled orders.
 - Q70's remaining menu parity: `+` add-to-cart, the meal step, tag badges.
+
+---
+
+## Result — the borne, on the GM92
+
+**The real catalogue is live.** `[KioskCatalog] menu v1 → v1789043850`, nine
+dishes with the dashboard's prices and photographs, and the sample-menu ribbon
+gone of its own accord because the menu being sold is no longer the seed.
+
+The menu was then rebuilt towards the phone app and the owner's reference
+tills, each step seen on the device:
+
+- Grid sized from the **width**: five compact columns alone, three beside the
+  basket, instead of three billboards.
+- Card: title 22 → 17 (at the role), the text block hugs its lines so the band
+  of cream between the name and the cooking time is gone, and the sold-out
+  badge no longer covers a third of the picture.
+- A **"+" on every card** that drops the dish straight in the basket with the
+  phone's fly-to-cart bubble — offered only where there is nothing to decide,
+  so Poulet DG's required *Accompagnement* still opens the composer.
+- A **basket panel** standing beside the menu on a wide screen: lines with
+  **dish thumbnails**, quantity steppers, a running total and *Commander*.
+  Proven on the device: two taps → 8 000 FCFA.
+- **Category tiles with icons and dish counts**, the icons chosen for this menu
+  (grill, rice bowl, soup, fish, plate) rather than the references' burger and
+  pizza. ⚠ Icon comes from the category NAME: the bundle has no icon field and
+  adding one re-pins every borne, so that is a scheduled change, not a design
+  one.
+- The strip falls back to icon-beside-label under 560 dp of height — the
+  Samsung is 411 dp tall in landscape and the stacked tile ate the grid.
+
+## ⚠ Two things only the owner can fix, both in the dashboard
+
+1. **Five of nine dishes have no photograph on the borne.**
+   `DishPhotoCacheResult(fetched: 2, reused: 2, refused: 5)` — the kiosk accepts
+   images from the Supabase host only, and those five are hotlinked elsewhere
+   (one is a signed URL that expires). They must be **re-uploaded through the
+   dashboard** into the catalog bucket. This is deliberate: a kiosk that
+   followed any URL would lose its menu pictures the day someone else's CDN
+   expired, which is exactly the outage it exists to survive.
+2. **Only one category is published** — "Plats", holding all nine dishes. The
+   drinks filter the owner asked for cannot appear until Boissons (and anything
+   else) has published products behind it. The strip and the icons are ready
+   for them.
+
+## Still open after this pass
+
+- The cuisine is **not yet installed on the Samsung**, so nothing has been
+  paired and no order has crossed.
+- The **offline drill has not been run**.
+- The composer is still the August design — a full-bleed photo and a stepper.
+  Matching the app's dish page is the next design step.

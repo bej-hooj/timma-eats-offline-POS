@@ -11,6 +11,7 @@ import 'package:pos_core/pos_core.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import 'catalog/dish_photo_cache.dart';
 import 'motion/kiosk_fly_to_cart.dart';
+import 'presentation/widgets/kiosk_cart_panel.dart';
 import 'printing/slip.dart';
 import 'hub/dev_provisioning.dart';
 import 'manager/manager_gate.dart';
@@ -380,7 +381,15 @@ class _MenuWithCartBar extends ConsumerWidget {
     if (menu == null) {
       return const KioskOutOfServiceScreen();
     }
-    return Column(
+    // ⚠ The panel is a LAYOUT choice, not a different product: both shapes
+    // read the same cart and reach the same confirm step. On a wide borne the
+    // basket stands beside the menu, the way every reference till does it; on
+    // a narrow one the bar stays, because a 340 dp panel there would squeeze
+    // the grid to two columns and cost more menu than it is worth.
+    final bool sideBySide = KioskCartPanel.fitsBeside(
+      MediaQuery.sizeOf(context).width,
+    );
+    final Widget menuPane = Column(
       children: <Widget>[
         Expanded(
           child: KioskMenuScreen(
@@ -401,7 +410,7 @@ class _MenuWithCartBar extends ConsumerWidget {
             },
           ),
         ),
-        if (!cart.isEmpty)
+        if (!cart.isEmpty && !sideBySide)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               KioskScale.gapXl,
@@ -418,6 +427,23 @@ class _MenuWithCartBar extends ConsumerWidget {
               ),
             ),
           ),
+      ],
+    );
+    if (!sideBySide) {
+      return menuPane;
+    }
+    return Row(
+      children: <Widget>[
+        Expanded(child: menuPane),
+        KioskCartPanel(
+          cart: cart,
+          photoCache: photos,
+          onCheckout: onCart,
+          onIncrement: (KioskCartItem item) =>
+              cartController.setQuantity(item.lineId, item.quantity + 1),
+          onDecrement: (KioskCartItem item) =>
+              cartController.setQuantity(item.lineId, item.quantity - 1),
+        ),
       ],
     );
   }
