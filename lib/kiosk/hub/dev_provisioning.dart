@@ -29,9 +29,30 @@ abstract final class KioskDevProvisioning {
     defaultValue: 'Borne (debug)',
   );
 
-  /// True when this build carries a complete debug identity to seed.
-  static bool get isConfigured =>
-      kDebugMode && branchId.isNotEmpty && deviceId.isNotEmpty;
+  /// True when this build carries a complete identity to seed.
+  ///
+  /// ⚠⚠ **This used to require `kDebugMode`, and that made a release build
+  /// unable to sell.** There is no provisioning flow in this app — `main()`
+  /// says so — so a release borne found no identity, showed the unprovisioned
+  /// screen, and stopped. The restaurant opens tomorrow on a release build;
+  /// "the identity only exists in debug" is not a safety property, it is the
+  /// absence of one.
+  ///
+  /// What the gate was really protecting is still protected, and more
+  /// precisely:
+  /// - **Nothing is invented.** Both values come from explicit
+  ///   `--dart-define`s and an empty one seeds nothing, so a build that was
+  ///   not told which branch it serves still refuses rather than guessing —
+  ///   which is what would file sales against a restaurant that does not
+  ///   exist.
+  /// - **Nothing is overwritten.** [seedIfAbsent] returns an existing identity
+  ///   untouched.
+  /// - **The SAMPLE MENU stays debug-only** ([seedMenu]). That is the gate
+  ///   that matters: fake prices on a machine facing the street.
+  ///
+  /// This is the shape CLAUDE.md §5 asks for anyway — keys and identities from
+  /// build configuration, never a literal and never a default.
+  static bool get isConfigured => branchId.isNotEmpty && deviceId.isNotEmpty;
 
   /// The sample menu's version. Deliberately the lowest a snapshot can carry,
   /// so any real bundle from `rpc_menu_snapshot` supersedes it on first fetch.
@@ -63,10 +84,7 @@ abstract final class KioskDevProvisioning {
       label: label,
     );
     store.writeIdentity(seeded);
-    debugPrint(
-      '[KioskDev] seeded a DEBUG identity for branch $branchId — '
-      'this path does not exist in release builds',
-    );
+    debugPrint('[KioskProvisioning] seeded identity for branch $branchId');
     return seeded;
   }
 
