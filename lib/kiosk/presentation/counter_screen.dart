@@ -176,10 +176,13 @@ class _Ticket extends StatelessWidget {
           ),
         ],
         // ⚠ **Shrink-to-fit, not just `maxLines: 1`.** [size] was tuned when
-        // this was one or two digits; four characters are roughly twice as
-        // wide, and on the Samsung in landscape the left half is about 200 dp.
-        // Clipping the code a customer has to read out at the counter is the
-        // one failure this screen cannot have.
+        // this was one or two digits and is a share of the screen HEIGHT, so
+        // it knows nothing about the width it must fit. Measured on the
+        // Samsung's 411 dp landscape: four characters want 490 dp and the
+        // side-by-side left half gives 398. A `Text` that does not fit simply
+        // lays out at its constraint and cuts the glyph off — no overflow
+        // warning, no exception, and a customer reading three characters of a
+        // four-character code out at the counter.
         Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
