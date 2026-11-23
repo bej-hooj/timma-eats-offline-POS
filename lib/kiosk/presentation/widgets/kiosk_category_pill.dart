@@ -35,12 +35,12 @@ class KioskCategoryPill extends StatelessWidget {
   /// before they make it.
   final int? count;
 
-  /// Lay the icon BESIDE the label instead of above it, and drop the count.
+  /// Tighten the pill for a short screen: a smaller icon, nothing else.
   ///
-  /// ⚠ Not a style choice. The stacked tile is 112 dp tall, and the Samsung
-  /// the cuisine runs on is **411 dp tall in landscape** — there the strip ate
-  /// the dish grid and the page overflowed. A kiosk screen is whatever the
-  /// restaurant mounted, so the strip has to work on both.
+  /// ⚠ It used to switch between two different layouts — a stacked tile and a
+  /// row — which meant the count was simply absent on a short screen and two
+  /// arrangements had to be kept working. The pill is one layout at every
+  /// size; this only trims it.
   final bool compact;
 
   @override
@@ -58,7 +58,8 @@ class KioskCategoryPill extends StatelessWidget {
         child: Material(
           color: selected ? AppColors.primary : AppColors.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(KioskScale.radius),
+            // Fully round: a pill, not a rounded card.
+            borderRadius: BorderRadius.circular(999),
             side: BorderSide(
               color: selected ? AppColors.primary : AppColors.controlBorder,
               width: selected ? 2 : 1,
@@ -66,7 +67,7 @@ class KioskCategoryPill extends StatelessWidget {
           ),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(KioskScale.radius),
+            borderRadius: BorderRadius.circular(999),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: KioskScale.gapMd,
@@ -76,44 +77,66 @@ class KioskCategoryPill extends StatelessWidget {
                 // At `gapMd` the three of them ran 7.6 px past the tile.
                 vertical: KioskScale.gap,
               ),
-              child: compact
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Icon(categoryIcon(label), size: 22, color: foreground),
-                        const SizedBox(width: KioskScale.gap),
-                        Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: foreground,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Icon(categoryIcon(label), size: 30, color: foreground),
-                        const SizedBox(height: KioskScale.gap / 2),
-                        Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: foreground,
-                          ),
-                        ),
-                        if (count != null)
-                          Text(
-                            '$count',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: foreground.withValues(alpha: 0.7),
-                            ),
-                          ),
-                      ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // ⚠ **A pill, not a tile.** Owner, 2026-11-23: *"the
+                  // categories card should rather be in badge pill form. icon
+                  // on left, text in middle and number on right (with light
+                  // difference in the background of the number)"*.
+                  //
+                  // The stacked tile was 112 dp tall and took that height off
+                  // the dish grid on every screen; a pill reads left to right
+                  // in one line and gives it back. The same layout now serves
+                  // the short-screen case, so there is one thing to get right
+                  // instead of two.
+                  Icon(
+                    categoryIcon(label),
+                    size: compact ? 20 : 24,
+                    color: foreground,
+                  ),
+                  const SizedBox(width: KioskScale.gap),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: foreground,
                     ),
+                  ),
+                  if (count != null) ...<Widget>[
+                    const SizedBox(width: KioskScale.gap),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        // The "light difference" the owner asked for: the
+                        // count sits on its own ground so it reads as a
+                        // tally rather than as part of the name. Derived from
+                        // the pill's own colours, so it works selected and
+                        // unselected without a second rule.
+                        color: selected
+                            ? theme.colorScheme.onPrimary.withValues(
+                                alpha: 0.18,
+                              )
+                            : AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: KioskScale.gap,
+                          vertical: 2,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: foreground,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
@@ -35,6 +36,7 @@ class KioskCartPanel extends StatelessWidget {
     required this.onCheckout,
     required this.onIncrement,
     required this.onDecrement,
+    required this.onRemove,
     this.photoCache,
     super.key,
   });
@@ -52,6 +54,9 @@ class KioskCartPanel extends StatelessWidget {
   final VoidCallback onCheckout;
   final void Function(KioskCartItem item) onIncrement;
   final void Function(KioskCartItem item) onDecrement;
+
+  /// Take the whole line out, however many of it there are.
+  final void Function(KioskCartItem item) onRemove;
 
   /// The same disk cache the menu draws from, so a line in the basket shows
   /// the picture the customer just tapped — and keeps showing it when the
@@ -90,6 +95,7 @@ class KioskCartPanel extends StatelessWidget {
                         photoCache: photoCache,
                         onIncrement: () => onIncrement(item),
                         onDecrement: () => onDecrement(item),
+                        onRemove: () => onRemove(item),
                       );
                     },
                   ),
@@ -165,6 +171,7 @@ class _Line extends StatelessWidget {
     required this.item,
     required this.onIncrement,
     required this.onDecrement,
+    required this.onRemove,
     this.photoCache,
   });
 
@@ -172,6 +179,7 @@ class _Line extends StatelessWidget {
   final DishPhotoCache? photoCache;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +214,34 @@ class _Line extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleMedium,
               ),
+              // ⚠ **What the customer actually composed, not just the dish
+              // name.** Seen on the real borne 2026-11-23: a Poulet DG ordered
+              // *sans persil* with a plantain side read simply "Poulet DG" in
+              // the basket. The kitchen would get it right and the customer
+              // had no way to check it before paying — and the one choice they
+              // are most likely to want to verify is the one they had to go
+              // looking for.
+              if (_composition(french).isNotEmpty)
+                Text(
+                  _composition(french),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              if (_removed(french).isNotEmpty)
+                Text(
+                  _removed(french),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    // A removal is the line a kitchen can get wrong and a
+                    // customer can react to, so it is not grey with the rest.
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               Text(
                 MoneyFormatter.formatXaf(item.lineTotal),
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -226,8 +262,48 @@ class _Line extends StatelessWidget {
           ),
         ),
         _Step(icon: Icons.add, onPressed: onIncrement),
+        // ⚠ **A way out of the line, not just down to one.** Owner,
+        // 2026-11-23: *"each dish row should have a remove button (icon)"*.
+        // The minus key stops at 1 — by design, so a mis-tap cannot silently
+        // empty a basket — which left a customer who had added the wrong dish
+        // with no way to undo it from this panel at all.
+        _Step(
+          icon: Icons.close,
+          onPressed: onRemove,
+          color: AppColors.textMuted,
+          // ⚠ Named, not just an icon. Three unlabelled icon keys in a row
+          // announce themselves identically, and the one that empties a line
+          // is the one that must not be guessed at. `tooltip` is what
+          // `IconButton` turns into the semantics label — a hand-rolled
+          // `Semantics` wrapper around it fights the button's own.
+          tooltip: AppLocalizations.of(context)!.kioskCartRemoveLine(
+            french ? item.product.nameFr : item.product.nameEn,
+          ),
+        ),
       ],
     );
+  }
+
+  /// Variant and chosen options, as one quiet line.
+  String _composition(bool french) {
+    final List<String> parts = <String>[
+      if (item.variant != null)
+        french ? item.variant!.nameFr : item.variant!.nameEn,
+      for (final SnapshotOption o in item.options) french ? o.nameFr : o.nameEn,
+    ];
+    return parts.join(' · ');
+  }
+
+  /// What was left out, named — ids never reach a customer's eyes.
+  String _removed(bool french) {
+    final List<String> names = <String>[
+      for (final String id in item.removedIngredientIds)
+        for (final SnapshotIngredient i in item.product.ingredients)
+          if (i.ingredientId == id) (french ? i.nameFr : i.nameEn),
+    ];
+    return names.isEmpty
+        ? ''
+        : names.map((String n) => french ? 'Sans $n' : 'No $n').join(' · ');
   }
 }
 
@@ -235,17 +311,31 @@ class _Line extends StatelessWidget {
 /// menu's 72 dp rule on purpose: this is a correction a customer makes with the
 /// basket already in front of them, not a control they hunt for across the room.
 class _Step extends StatelessWidget {
-  const _Step({required this.icon, required this.onPressed});
+  const _Step({
+    required this.icon,
+    required this.onPressed,
+    this.color,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onPressed;
+  final String? tooltip;
+
+  /// The remove key is drawn quieter than the quantity keys: it is the one a
+  /// customer should reach for deliberately, not by habit.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 56,
       height: 56,
-      child: IconButton(onPressed: onPressed, icon: Icon(icon)),
+      child: IconButton(
+        onPressed: onPressed,
+        tooltip: tooltip,
+        icon: Icon(icon, color: color),
+      ),
     );
   }
 }

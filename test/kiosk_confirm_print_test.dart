@@ -354,11 +354,10 @@ void main() {
 
     expect(store.allOrders(), hasLength(2), reason: 'two customers, two sales');
     expect(printer.sent, hasLength(2), reason: 'and two slips');
-    expect(
-      store.allOrders().map((PosOrder o) => o.ticketNumber),
-      <int>[1, 2],
-      reason: 'numbering continues rather than reusing a printed number',
-    );
+    expect(store.allOrders().map((PosOrder o) => o.ticketNumber), <int>[
+      1,
+      2,
+    ], reason: 'numbering continues rather than reusing a printed number');
   });
 
   testWidgets('the counter screen fits every real tablet size, in French', (

@@ -9,6 +9,17 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String kioskCartRemoveLine(String dish) {
+    return 'Remove $dish';
+  }
+
+  @override
+  String get kioskCounterCodeLabel => 'Your order code';
+
+  @override
+  String get kioskCounterNoteCode => 'Write this code down';
+
+  @override
   String get kioskAttractTitle => 'Order here';
 
   @override

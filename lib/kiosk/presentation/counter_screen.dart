@@ -175,6 +175,20 @@ class _Ticket extends StatelessWidget {
             ),
           ),
         ],
+        // ⚠ **Say what the big thing IS.** Owner, 2026-11-23: *"the client
+        // should clearly understand that the code displayed is the code he
+        // should note to pay à la caisse"*. Four characters alone, however
+        // large, is a number on a screen — a customer who does not know it is
+        // theirs walks to the counter without it.
+        Text(
+          l10n.kioskCounterCodeLabel,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: on.withValues(alpha: 0.85),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: KioskScale.gap),
         // ⚠ **Shrink-to-fit, not just `maxLines: 1`.** [size] was tuned when
         // this was one or two digits and is a share of the screen HEIGHT, so
         // it knows nothing about the width it must fit. Measured on the
@@ -200,6 +214,18 @@ class _Ticket extends StatelessWidget {
                 color: on,
               ),
             ),
+          ),
+        ),
+        // And the instruction, under it: this is the moment the customer is
+        // looking at the code, and the only moment they will.
+        const SizedBox(height: KioskScale.gap),
+        Text(
+          l10n.kioskCounterNoteCode.toUpperCase(),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: on,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
           ),
         ),
       ],

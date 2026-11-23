@@ -443,6 +443,7 @@ class _MenuWithCartBar extends ConsumerWidget {
               cartController.setQuantity(item.lineId, item.quantity + 1),
           onDecrement: (KioskCartItem item) =>
               cartController.setQuantity(item.lineId, item.quantity - 1),
+          onRemove: (KioskCartItem item) => cartController.remove(item.lineId),
         ),
       ],
     );

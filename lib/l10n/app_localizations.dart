@@ -98,6 +98,24 @@ abstract class AppLocalizations {
     Locale('fr'),
   ];
 
+  /// Screen-reader label for the remove key on a basket row.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer {dish}'**
+  String kioskCartRemoveLine(String dish);
+
+  /// Above the four-character code on the confirmation screen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code de votre commande'**
+  String get kioskCounterCodeLabel;
+
+  /// Tells the customer to note the code before leaving the borne.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notez ce code'**
+  String get kioskCounterNoteCode;
+
   /// No description provided for @kioskAttractTitle.
   ///
   /// In fr, this message translates to:

@@ -12,10 +12,13 @@ abstract final class KioskScale {
   /// looking for staff.
   static const double minTarget = 72;
 
-  /// A category tile: icon, name, and the number of dishes behind it. Taller
-  /// than [minTarget] because it stacks three things, not because a bigger
-  /// target was wanted.
-  static const double categoryTileHeight = 88;
+  /// A category pill: icon, name and count on ONE line (owner, 2026-11-23).
+  ///
+  /// ⚠ It was 88 — tall enough to stack the three — and every dp of that came
+  /// off the dish grid on every screen. Laid out in a row the pill needs no
+  /// more than the touch rule already demands, so the strip now costs the
+  /// menu nothing beyond [minTarget].
+  static const double categoryTileHeight = minTarget;
 
   /// The 8pt grid the rest of the product is on (§13.1), used at kiosk sizes.
   static const double gap = 8;

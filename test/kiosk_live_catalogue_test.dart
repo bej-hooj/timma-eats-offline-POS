@@ -177,7 +177,8 @@ void main() {
       expect(
         find.textContaining('PRIX NON RÉELS'),
         findsNothing,
-        reason: 'real prices under a band calling them fake is the one way '
+        reason:
+            'real prices under a band calling them fake is the one way '
             'this marker can do harm — people learn to read past it',
       );
     });

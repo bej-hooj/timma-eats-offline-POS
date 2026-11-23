@@ -215,7 +215,8 @@ void main() {
     expect(
       added?.removedIngredientIds,
       <String>['i-5'],
-      reason: 'the removal has to leave the screen or the kitchen never hears '
+      reason:
+          'the removal has to leave the screen or the kitchen never hears '
           'about it',
     );
 

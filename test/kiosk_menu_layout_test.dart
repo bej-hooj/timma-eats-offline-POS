@@ -222,7 +222,8 @@ void main() {
       expect(
         photo.height,
         greaterThan(card.height * 0.4),
-        reason: 'the photograph sells the dish — it must still dominate: '
+        reason:
+            'the photograph sells the dish — it must still dominate: '
             '${photo.height} of ${card.height} at $size',
       );
       // And nothing the text block holds may hang outside the card.

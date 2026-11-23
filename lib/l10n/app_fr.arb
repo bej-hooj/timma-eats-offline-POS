@@ -1,4 +1,10 @@
 {
+  "kioskCartRemoveLine": "Retirer {dish}",
+  "@kioskCartRemoveLine": {"description": "Screen-reader label for the remove key on a basket row.", "placeholders": {"dish": {"type": "String"}}},
+  "kioskCounterCodeLabel": "Code de votre commande",
+  "@kioskCounterCodeLabel": {"description": "Above the four-character code on the confirmation screen."},
+  "kioskCounterNoteCode": "Notez ce code",
+  "@kioskCounterNoteCode": {"description": "Tells the customer to note the code before leaving the borne."},
   "kioskAttractTitle": "Commandez ici",
   "kioskAttractSubtitle": "Touchez l'écran pour commencer",
   "kioskAttractStart": "Commencer",
