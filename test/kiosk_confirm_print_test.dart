@@ -395,6 +395,11 @@ void main() {
       // height's type size want 392. Without `BoxFit.scaleDown` the code is
       // clipped here — proven by removing it.
       (const Size(1280, 800), 2.0), // budget 7-inch, 640x400 dp
+      // ⚠ And the other end. Owner, 2026-11-23: the borne may be shown on a
+      // television, which reports its pixels at a ratio of 1 — four times the
+      // logical width a tablet hands the layout.
+      (const Size(1920, 1080), 1.0), // television 1080p
+      (const Size(3840, 2160), 1.0), // television 4K
     ]) {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;

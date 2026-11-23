@@ -96,6 +96,15 @@ void main() {
     'Samsung S10 landscape (868x411 dp)': (Size(2280, 1080), 2.625),
     'mounted 10-inch tablet (1280x800 dp)': (Size(2560, 1600), 2.0),
     'small 7-inch tablet (960x600 dp)': (Size(1920, 1200), 2.0),
+    // ⚠ Owner, 2026-11-23: *"kitchen and born should fit any size cause it
+    // could be displayed on tv. so RESPONSIVENESS"*. A television reports its
+    // pixels at a ratio of 1, so the layout is handed a number four times
+    // anything a tablet gives it — every "it fits on the borne" constant is
+    // worth nothing here.
+    'television 1080p (1920x1080 dp)': (Size(1920, 1080), 1.0),
+    'television 4K (3840x2160 dp)': (Size(3840, 2160), 1.0),
+    // And the other end: the narrowest board anyone would mount.
+    'budget 7-inch (640x400 dp)': (Size(1280, 800), 2.0),
   };
 
   for (final MapEntry<String, (Size, double)> device in devices.entries) {
@@ -150,6 +159,35 @@ void main() {
         ).textTheme.titleMedium?.fontSize,
         reason: 'the card title comes from the role, not from a call site',
       );
+    });
+  }
+
+  /// ⚠ **The viewer's own text scale, which the kitchen board was caught
+  /// ignoring on 2026-11-23.**
+  ///
+  /// The Samsung in the kitchen is set to font scale 1.1 — an ordinary
+  /// accessibility setting — and a lane heading there rendered 10% wider than
+  /// the layout arithmetic believed, three times in a row. The borne is a
+  /// tablet somebody can set the same way, and a menu is far denser than a
+  /// board. 1.3 is the step a customer with poor eyesight would actually pick.
+  for (final double scale in <double>[1.1, 1.3]) {
+    testWidgets('nothing breaks at text scale $scale', (tester) async {
+      tester.view.physicalSize = const Size(2280, 1080);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+          child: app(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull, reason: 'overflow at $scale');
+      // The price is the line the customer is deciding on, and it is the one
+      // the Samsung clipped when this screen was first built.
+      expect(find.text(MoneyFormatter.formatXaf(4500)), findsOneWidget);
     });
   }
 
