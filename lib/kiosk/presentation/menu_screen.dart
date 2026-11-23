@@ -15,6 +15,13 @@ import 'widgets/kiosk_dish_card.dart';
 /// Whole rows only. A grid that shows a band of half-cut cards along the bottom
 /// invites a standing customer to try to read them, and a kiosk is not a page
 /// people expect to scroll — so the cards shrink to fit instead.
+/// Above this width the language control spells the language out.
+///
+/// 1100 dp: the borne itself is 1920, a 10-inch tablet 1280, and the Samsung
+/// in landscape 868 — so the word appears everywhere there is room for it and
+/// the two letters stay on the screens where the header is already tight.
+const double _languageLabelWidth = 1100;
+
 class _DishGridMetrics {
   const _DishGridMetrics({required this.cardWidth, required this.cardHeight});
 
@@ -321,7 +328,21 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  child: Text(french ? 'EN' : 'FR'),
+                  // ⚠ **The label is responsive, not fixed.** It was cut to
+                  // two letters because the themed button made "English" about
+                  // 224 dp wide on a control nobody came here to press — but
+                  // on a wide screen, and certainly on a television, two
+                  // letters are a puzzle where there is room for the word.
+                  // Owner, 2026-11-23: full text on a larger screen.
+                  //
+                  // The language it switches TO, in that language: a French
+                  // customer looking for English scans for "English", not for
+                  // "Anglais".
+                  child: Text(
+                    MediaQuery.sizeOf(context).width >= _languageLabelWidth
+                        ? (french ? 'English' : 'Français')
+                        : (french ? 'EN' : 'FR'),
+                  ),
                 ),
               ),
             ],

@@ -48,7 +48,10 @@ class KioskCartPanel extends StatelessWidget {
 
   static bool fitsBeside(double width) => width >= minWidthToFit;
 
-  static const double panelWidth = 340;
+  /// ⚠ 340 was too narrow the moment a row carried more than a name. The
+  /// basket only appears beside the menu on a screen of 900 dp or more, so
+  /// these 40 dp come out of a grid that has them to spare.
+  static const double panelWidth = 380;
 
   final KioskCartState cart;
   final VoidCallback onCheckout;
@@ -186,62 +189,117 @@ class _Line extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Locale locale = Localizations.localeOf(context);
     final bool french = locale.languageCode == 'fr';
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        // The dish, not a word for it. Every reference order list carries the
-        // picture, and on a kiosk it is what lets a customer check their
-        // basket at a glance instead of reading it.
-        ClipRRect(
-          borderRadius: BorderRadius.circular(KioskScale.gap),
-          child: SizedBox(
-            width: 56,
-            height: 56,
-            child: KioskDishThumb(
-              photoUrl: item.product.photoUrl,
-              cache: photoCache,
-            ),
-          ),
-        ),
-        const SizedBox(width: KioskScale.gap),
-        Expanded(
-          child: Column(
+    // ⚠⚠ **Two rows, because six controls do not fit one.**
+    //
+    // Measured on the borne 2026-11-23, with the remove key added: thumbnail
+    // 56 + three 56 dp keys + the remove key left about 60 dp for the dish,
+    // and "Pepper soup de bœuf TIMMA / 3 500 FCFA" wrapped ONE CHARACTER PER
+    // LINE. A basket a customer cannot read is worse than one they cannot
+    // edit, and the fix is not to shave the controls — it is to stop asking a
+    // 340 dp panel to lay six things side by side.
+    //
+    // The dish and its composition get the full width; the price and the
+    // quantity keys sit under them.
+    // Owner, 2026-11-23: *"every dish row could even be improved in its
+    // design and packed in borders"*. A card per line, which is also what the
+    // full cart screen does — two surfaces showing the same basket should not
+    // show it two different ways.
+    return Container(
+      key: const Key('kiosk-cart-row'),
+      padding: const EdgeInsets.all(KioskScale.gap),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(KioskScale.radius),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                french ? item.product.nameFr : item.product.nameEn,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleMedium,
+              // The dish, not a word for it. Every reference order list carries
+              // the picture, and on a kiosk it is what lets a customer check
+              // their basket at a glance instead of reading it.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(KioskScale.gap),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: KioskDishThumb(
+                    photoUrl: item.product.photoUrl,
+                    cache: photoCache,
+                  ),
+                ),
               ),
-              // ⚠ **What the customer actually composed, not just the dish
-              // name.** Seen on the real borne 2026-11-23: a Poulet DG ordered
-              // *sans persil* with a plantain side read simply "Poulet DG" in
-              // the basket. The kitchen would get it right and the customer
-              // had no way to check it before paying — and the one choice they
-              // are most likely to want to verify is the one they had to go
-              // looking for.
-              if (_composition(french).isNotEmpty)
-                Text(
-                  _composition(french),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textMuted,
-                  ),
+              const SizedBox(width: KioskScale.gap),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      french ? item.product.nameFr : item.product.nameEn,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    // ⚠ **What the customer actually composed, not just the
+                    // dish name.** Seen on the real borne: a Poulet DG ordered
+                    // *sans persil* with a plantain side read simply "Poulet
+                    // DG" in the basket. The kitchen would get it right and the
+                    // customer had no way to check it before paying — and the
+                    // one choice they are most likely to want to verify is the
+                    // one they had to go looking for.
+                    if (_composition(french).isNotEmpty)
+                      Text(
+                        _composition(french),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    if (_removed(french).isNotEmpty)
+                      Text(
+                        _removed(french),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          // A removal is the line a kitchen can get wrong and a
+                          // customer can react to, so it is not grey with the
+                          // rest.
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                  ],
                 ),
-              if (_removed(french).isNotEmpty)
-                Text(
-                  _removed(french),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    // A removal is the line a kitchen can get wrong and a
-                    // customer can react to, so it is not grey with the rest.
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w700,
-                  ),
+              ),
+              // ⚠ **A way out of the line, not just down to one.** Owner,
+              // 2026-11-23: *"each dish row should have a remove button
+              // (icon)"*. The minus key stops at 1 — by design, so a mis-tap
+              // cannot silently empty a basket — which left a customer who had
+              // added the wrong dish with no way to undo it from this panel.
+              //
+              // At the top right, away from the quantity keys: the one control
+              // here that cannot be undone is the one that should not be hit by
+              // habit.
+              _Step(
+                icon: Icons.close,
+                onPressed: onRemove,
+                color: AppColors.textMuted,
+                // Named, not just an icon. Several unlabelled icon keys in one
+                // row announce themselves identically, and the one that empties
+                // a line must not be guessed at. `tooltip` is what `IconButton`
+                // turns into the semantics label.
+                tooltip: AppLocalizations.of(context)!.kioskCartRemoveLine(
+                  french ? item.product.nameFr : item.product.nameEn,
                 ),
+              ),
+            ],
+          ),
+          Row(
+            children: <Widget>[
               Text(
                 MoneyFormatter.formatXaf(item.lineTotal),
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -249,38 +307,21 @@ class _Line extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              const Spacer(),
+              _Step(icon: Icons.remove, onPressed: onDecrement),
+              SizedBox(
+                width: 32,
+                child: Text(
+                  '${item.quantity}',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              _Step(icon: Icons.add, onPressed: onIncrement),
             ],
           ),
-        ),
-        _Step(icon: Icons.remove, onPressed: onDecrement),
-        SizedBox(
-          width: 32,
-          child: Text(
-            '${item.quantity}',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
-        _Step(icon: Icons.add, onPressed: onIncrement),
-        // ⚠ **A way out of the line, not just down to one.** Owner,
-        // 2026-11-23: *"each dish row should have a remove button (icon)"*.
-        // The minus key stops at 1 — by design, so a mis-tap cannot silently
-        // empty a basket — which left a customer who had added the wrong dish
-        // with no way to undo it from this panel at all.
-        _Step(
-          icon: Icons.close,
-          onPressed: onRemove,
-          color: AppColors.textMuted,
-          // ⚠ Named, not just an icon. Three unlabelled icon keys in a row
-          // announce themselves identically, and the one that empties a line
-          // is the one that must not be guessed at. `tooltip` is what
-          // `IconButton` turns into the semantics label — a hand-rolled
-          // `Semantics` wrapper around it fights the button's own.
-          tooltip: AppLocalizations.of(context)!.kioskCartRemoveLine(
-            french ? item.product.nameFr : item.product.nameEn,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

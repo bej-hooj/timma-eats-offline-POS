@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
+import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_cart_panel.dart';
 import 'package:timma_kiosk/kiosk/state/kiosk_cart.dart';
@@ -131,6 +132,55 @@ void main() {
     // Twice on purpose: the line and the basket total, which for one line are
     // the same number.
     expect(find.text(MoneyFormatter.formatXaf(5100)), findsNWidgets(2));
+  });
+
+  testWidgets('the dish name gets real room, not six characters of it', (
+    tester,
+  ) async {
+    // ⚠⚠ The defect, as a measurement. With the remove key added to a single
+    // row, the thumbnail and four keys left about 60 dp for the dish, and
+    // "Pepper soup de bœuf TIMMA / 3 500 FCFA" wrapped ONE CHARACTER PER
+    // LINE on the real borne. A basket a customer cannot read is worse than
+    // one they cannot edit.
+    await pump(tester);
+
+    // ⚠ The assertion is on the PRICE's ROW, and both halves of that are
+    // deliberate. The name is capped at two lines and ellipsizes, so a
+    // squeezed column turns it into "Pe p…" without ever growing — what
+    // actually stacked one character per line on the borne was the price,
+    // which has no cap. And a `Text` is only as wide as its own glyphs, so
+    // measuring the text would measure the harness's full-em font; the row it
+    // sits in is the room it has.
+    final double priceRow = tester
+        .getSize(
+          find
+              .ancestor(
+                of: find.text(MoneyFormatter.formatXaf(5100)).first,
+                matching: find.byType(Row),
+              )
+              .first,
+        )
+        .width;
+    expect(
+      priceRow,
+      greaterThan(KioskCartPanel.panelWidth * 0.7),
+      reason:
+          'the price had $priceRow dp of the ${KioskCartPanel.panelWidth} dp '
+          'panel — squeezed into a narrow column it stacks as '
+          '"3 5 00 FCF A" down the side of the basket',
+    );
+  });
+
+  testWidgets('each row is packed in its own bordered card', (tester) async {
+    await pump(tester);
+
+    final Container card = tester.widget<Container>(
+      find.byKey(const Key('kiosk-cart-row')),
+    );
+    final BoxDecoration decoration = card.decoration! as BoxDecoration;
+    expect(decoration.border, isNotNull);
+    expect(decoration.color, AppColors.surface);
+    expect(decoration.borderRadius, isNotNull);
   });
 
   testWidgets('a plain dish draws neither line', (tester) async {

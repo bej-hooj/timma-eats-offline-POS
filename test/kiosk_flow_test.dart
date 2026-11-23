@@ -414,10 +414,12 @@ void main() {
       await tester.tap(find.byType(KioskAttractScreen));
       await tester.pumpAndSettle();
 
-      // ⚠ The label is the language it switches TO, abbreviated: the full
-      // word in a themed button came out ~224 dp wide for a control nobody
-      // came to the borne to press, and it was eating the dish grid.
-      await tester.tap(find.widgetWithText(OutlinedButton, 'EN'));
+      // ⚠ The label is the language it switches TO, and it is RESPONSIVE
+      // (owner, 2026-11-23): the word where there is room for it, two letters
+      // where the header is tight. This harness is 1200 dp wide, so the word.
+      // A French customer looking for English scans for "English", never for
+      // "Anglais".
+      await tester.tap(find.widgetWithText(OutlinedButton, 'English'));
       await tester.pumpAndSettle();
       expect(find.text('Our menu'), findsOneWidget);
       expect(find.text('Chicken DG'), findsOneWidget);
