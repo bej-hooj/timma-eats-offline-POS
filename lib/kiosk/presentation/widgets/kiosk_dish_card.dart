@@ -176,14 +176,30 @@ class KioskDishCard extends StatelessWidget {
                         Row(
                           children: <Widget>[
                             Expanded(
-                              child: Text(
-                                price,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  fontSize: KioskScale.cardPriceSize,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
+                              // ⚠⚠ **The price must never be cut.** Seen on
+                              // the borne 2026-11-23: narrow cards rendered
+                              // "3 500 FC…" — an ellipsis in the middle of the
+                              // one number the customer is deciding on, and
+                              // one that could just as easily have clipped a
+                              // digit. An ellipsis is acceptable on a dish
+                              // NAME, where the card carries a photograph and
+                              // the detail page carries the rest; it is not
+                              // acceptable on money.
+                              //
+                              // `scaleDown` only ever shrinks, so a card with
+                              // room keeps the full type size and a row of
+                              // dishes still has one price line across it.
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  price,
+                                  maxLines: 1,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontSize: KioskScale.cardPriceSize,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                               ),
                             ),

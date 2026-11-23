@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
@@ -171,6 +172,41 @@ void main() {
   /// tablet somebody can set the same way, and a menu is far denser than a
   /// board. 1.3 is the step a customer with poor eyesight would actually pick.
   for (final double scale in <double>[1.1, 1.3]) {
+    testWidgets('the price is never cut, however narrow the card', (
+      tester,
+    ) async {
+      // ⚠ Seen on the borne 2026-11-23 in portrait: "3 500 FC…". An ellipsis is
+      // acceptable on a dish NAME — the card has a photograph and the detail
+      // page has the rest — but not on the one number a customer is deciding
+      // on, and not when the next character cut could be a digit.
+      tester.view.physicalSize = const Size(
+        1080,
+        1920,
+      ); // portrait, narrow cards
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final Finder price = find.text(MoneyFormatter.formatXaf(4500));
+      expect(price, findsOneWidget);
+
+      // The painted width is the shrunk one; what matters is that the GLYPHS
+      // are all there, which `BoxFit.scaleDown` guarantees and an ellipsis does
+      // not. Asserted through the rendered text, since an ellipsised `Text`
+      // still reports its original string.
+      final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+        price,
+      );
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'the price was clipped on a narrow card',
+      );
+    });
+
     testWidgets('nothing breaks at text scale $scale', (tester) async {
       tester.view.physicalSize = const Size(2280, 1080);
       tester.view.devicePixelRatio = 2.625;
