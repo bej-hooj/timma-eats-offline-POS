@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:timma_kiosk/design/app_tokens.dart';
 import '../../catalog/dish_photo_cache.dart';
+import 'kiosk_shimmer.dart';
 
 /// A dish's photograph, wherever a dish appears.
 ///
@@ -72,6 +73,37 @@ class KioskDishThumb extends StatelessWidget {
       source,
       fit: BoxFit.cover,
       errorBuilder: (BuildContext _, Object _, StackTrace? _) => _fallback(),
+      // ⚠ **The waiting state, which this had none of.** Until the bytes
+      // arrived the card drew an empty hole — no panel, no sign of life — and
+      // a hole in a menu on a machine facing the street reads as broken rather
+      // than as slow (CLAUDE.md §13.2: the loading state is mandatory, and a
+      // skeleton rather than a spinner).
+      //
+      // `wasSynchronouslyLoaded` is the cached case: those bytes are already
+      // in hand, so they paint on the first frame with no fade and no shimmer.
+      frameBuilder:
+          (
+            BuildContext context,
+            Widget child,
+            int? frame,
+            bool wasSynchronouslyLoaded,
+          ) {
+            if (wasSynchronouslyLoaded) {
+              return child;
+            }
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              child: frame == null
+                  ? KioskShimmer(
+                      key: const ValueKey<String>('shimmer'),
+                      radius: radius,
+                    )
+                  : KeyedSubtree(
+                      key: const ValueKey<String>('photo'),
+                      child: child,
+                    ),
+            );
+          },
     );
   }
 

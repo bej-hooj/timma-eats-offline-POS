@@ -88,14 +88,11 @@ class _KioskManagerScreenState extends ConsumerState<KioskManagerScreen> {
                   // read is how a cook ends up typing six digits anyway.
                   for (final PendingApproval approval in hub.approvals)
                     Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: KioskScale.gapLg,
-                      ),
+                      padding: const EdgeInsets.only(bottom: KioskScale.gapLg),
                       child: _ApprovalCard(
                         approval: approval,
-                        onAccept: () => ref
-                            .read(hubProvider.notifier)
-                            .approve(approval.id),
+                        onAccept: () =>
+                            ref.read(hubProvider.notifier).approve(approval.id),
                         onRefuse: () =>
                             ref.read(hubProvider.notifier).refuse(approval.id),
                       ),
@@ -310,9 +307,7 @@ class _PairingCodeCardState extends State<_PairingCodeCard> {
                 fontSize: KioskScale.headlineSize * 0.8,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2,
-                color: expired
-                    ? theme.colorScheme.error
-                    : AppColors.textMuted,
+                color: expired ? theme.colorScheme.error : AppColors.textMuted,
               ),
             ),
             const SizedBox(height: KioskScale.gap),
@@ -321,9 +316,7 @@ class _PairingCodeCardState extends State<_PairingCodeCard> {
                   ? l10n.kioskManagerCodeExpired
                   : l10n.kioskManagerCodeLeft(left.inSeconds),
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: expired
-                    ? theme.colorScheme.error
-                    : AppColors.textMuted,
+                color: expired ? theme.colorScheme.error : AppColors.textMuted,
               ),
             ),
             const SizedBox(height: KioskScale.gapMd),
@@ -337,7 +330,6 @@ class _PairingCodeCardState extends State<_PairingCodeCard> {
     );
   }
 }
-
 
 /// A cuisine waiting to be let in, and the number that says it is the right
 /// one.

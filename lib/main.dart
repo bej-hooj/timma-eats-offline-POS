@@ -116,26 +116,26 @@ Future<void> main() async {
 
   container = ProviderContainer(
     overrides: [
-        kioskEngineProvider.overrideWithValue(engine),
-        kioskCollectionSecretProvider.overrideWithValue(secret),
-        kioskPrintQueueProvider.overrideWithValue(_printQueue()),
-        kioskPhotoCacheProvider.overrideWithValue(photos),
-        // ⚠ **At the ROOT, not in a child `ProviderScope`.** It was in one, and
-        // the kitchen stayed empty through a whole sale on the devices while
-        // every test passed. Riverpod 3 does not re-instantiate a provider in a
-        // child scope just because it reads an overridden one: the session
-        // controller lives in the root container, so `ref.read` of the
-        // publisher there returned the **default no-op** and the sale was
-        // announced to nobody. The unit test could not see it — it built one
-        // container and overrode at its root, which is the shape that works.
-        kioskBoardPublisherProvider.overrideWith(
-          (Ref ref) =>
-              () => ref.read(hubProvider.notifier).publishBoard(),
-        ),
-        // What makes the dashboard's menu reach the screen without a restart.
-        if (catalog != null)
-          kioskMenuRevisionProvider.overrideWithValue(catalog.menuRevision),
-      ],
+      kioskEngineProvider.overrideWithValue(engine),
+      kioskCollectionSecretProvider.overrideWithValue(secret),
+      kioskPrintQueueProvider.overrideWithValue(_printQueue()),
+      kioskPhotoCacheProvider.overrideWithValue(photos),
+      // ⚠ **At the ROOT, not in a child `ProviderScope`.** It was in one, and
+      // the kitchen stayed empty through a whole sale on the devices while
+      // every test passed. Riverpod 3 does not re-instantiate a provider in a
+      // child scope just because it reads an overridden one: the session
+      // controller lives in the root container, so `ref.read` of the
+      // publisher there returned the **default no-op** and the sale was
+      // announced to nobody. The unit test could not see it — it built one
+      // container and overrode at its root, which is the shape that works.
+      kioskBoardPublisherProvider.overrideWith(
+        (Ref ref) =>
+            () => ref.read(hubProvider.notifier).publishBoard(),
+      ),
+      // What makes the dashboard's menu reach the screen without a restart.
+      if (catalog != null)
+        kioskMenuRevisionProvider.overrideWithValue(catalog.menuRevision),
+    ],
   );
 
   runApp(
@@ -165,8 +165,7 @@ bool _kioskIsIdle(ProviderContainer container) {
   if (stage == KioskStage.attract || stage == KioskStage.outOfService) {
     return true;
   }
-  return stage == KioskStage.menu &&
-      container.read(kioskCartProvider).isEmpty;
+  return stage == KioskStage.menu && container.read(kioskCartProvider).isEmpty;
 }
 
 /// Where dish photographs live, or null when this build has no cloud host to
