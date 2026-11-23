@@ -9,13 +9,23 @@ class StrandedTicket {
   const StrandedTicket({
     required this.clientId,
     required this.ticketNumber,
+    required this.ticketCode,
     required this.total,
     required this.reason,
     required this.kind,
   });
 
   final String clientId;
+
+  /// The raw sequence, kept for ORDERING only. It is not what the manager
+  /// reads: since 2026-11-23 the slip and both screens carry [ticketCode].
   final int? ticketNumber;
+
+  /// The four-character code printed on the slip — the only handle a manager
+  /// can match against the pile of paper by the till. Null for a sale written
+  /// before ticket codes existed.
+  final String? ticketCode;
+
   final int total;
 
   /// Why it is stuck — the envelope's own last error, or `pending` when it is
@@ -149,6 +159,7 @@ abstract final class ShiftClose {
           StrandedTicket(
             clientId: order.clientId,
             ticketNumber: order.ticketNumber,
+            ticketCode: order.ticketLabelOrNull,
             total: order.total,
             kind: envelope.kind,
             reason: envelope.state == EnvelopeState.quarantined

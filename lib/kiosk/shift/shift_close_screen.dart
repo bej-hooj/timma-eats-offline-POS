@@ -93,8 +93,9 @@ class ShiftCloseScreen extends StatelessWidget {
                           ),
                           child: Text(
                             l10n.shiftCloseTicketLine(
-                              t.ticketNumber?.toString() ??
-                                  l10n.shiftCloseNoTicketNumber,
+                              // The code, so it matches the printed slip the
+                              // manager is holding; the number only sorts.
+                              t.ticketCode ?? l10n.shiftCloseNoTicketNumber,
                               t.reason,
                             ),
                             style: theme.textTheme.bodyLarge,

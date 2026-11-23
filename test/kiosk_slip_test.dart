@@ -270,11 +270,17 @@ void main() {
         french: true,
       );
 
-      expect(_contains(bytes, utf8.encode('B1-42')), isTrue);
+      // Four characters, no separator (owner 2026-11-23). The sequence half
+      // is a permutation of 42, so it is asserted through the same function
+      // the slip uses rather than retyped — a hard-coded 'B1XY' here would
+      // pass while the printer got something else.
+      final String expected = 'B1${ticketSequenceCode(42)}';
+      expect(expected, matches(RegExp(r'^[A-Z0-9]{4}$')));
+      expect(_contains(bytes, utf8.encode(expected)), isTrue);
       expect(
-        _contains(bytes, utf8.encode('B1-42')) &&
-            !_contains(bytes, utf8.encode('B2-42')),
-        isTrue,
+        _contains(bytes, utf8.encode('B2${ticketSequenceCode(42)}')),
+        isFalse,
+        reason: 'two bornes on the same sequence must print different slips',
       );
     });
 

@@ -8,11 +8,16 @@ import '../theme/kiosk_scale.dart';
 
 /// The last screen: a **large calm number** and where to take it.
 ///
-/// It renders [PosOrder.ticketNumber] — assigned instantly and locally at the
-/// moment of sale, reset at the Douala day boundary. Deliberately **not**
-/// `dailyCode`, which is the kitchen's and is minted by the server: an offline
-/// ticket does not have one yet, and a screen that waits on the network to tell
-/// a customer where to pay is the whole failure §23 exists to prevent.
+/// It renders [PosOrder.ticketLabelOrNull] — the four-character code assigned
+/// instantly and locally at the moment of sale, reset at the Douala day
+/// boundary. Deliberately **not** `dailyCode`, which is the kitchen's and is
+/// minted by the server: an offline ticket does not have one yet, and a screen
+/// that waits on the network to tell a customer where to pay is the whole
+/// failure §23 exists to prevent.
+///
+/// ⚠ The **code**, not the bare number. Owner, 2026-11-23: a ticket called
+/// *"1"* or *"2"* is not something a customer can hold on to, and it is the
+/// same thing the other borne is calling its first sale.
 ///
 /// **No PII.** The kiosk never collects a name or a phone, and this screen
 /// faces the room.
@@ -37,7 +42,7 @@ class KioskCounterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final int? number = placed.order.ticketNumber;
+    final String? code = placed.order.ticketLabelOrNull;
 
     return ColoredBox(
       color: theme.colorScheme.primary,
@@ -61,7 +66,7 @@ class KioskCounterScreen extends StatelessWidget {
           final bool sideBySide =
               height < _stackedNeeds && constraints.maxWidth > height;
           final Widget ticket = _Ticket(
-            number: number,
+            code: code,
             size: _numberSize(height, sideBySide: sideBySide),
             showCaption: !sideBySide,
           );
@@ -136,12 +141,12 @@ class KioskCounterScreen extends StatelessWidget {
 /// The number a customer shows at the counter, and nothing else.
 class _Ticket extends StatelessWidget {
   const _Ticket({
-    required this.number,
+    required this.code,
     required this.size,
     required this.showCaption,
   });
 
-  final int? number;
+  final String? code;
   final double size;
 
   /// The stacked layout keeps "Merci !" and "Présentez ce numéro" above the
@@ -170,14 +175,28 @@ class _Ticket extends StatelessWidget {
             ),
           ),
         ],
-        Text(
-          number == null ? '—' : '$number',
-          maxLines: 1,
-          style: TextStyle(
-            fontSize: size,
-            fontWeight: FontWeight.w800,
-            height: 1.1,
-            color: on,
+        // ⚠ **Shrink-to-fit, not just `maxLines: 1`.** [size] was tuned when
+        // this was one or two digits; four characters are roughly twice as
+        // wide, and on the Samsung in landscape the left half is about 200 dp.
+        // Clipping the code a customer has to read out at the counter is the
+        // one failure this screen cannot have.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              code ?? '—',
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: size,
+                fontWeight: FontWeight.w800,
+                height: 1.1,
+                // A four-character code reads better slightly open than a
+                // number does; at this weight and size the default tracking
+                // crowds the pairs.
+                letterSpacing: size * 0.02,
+                color: on,
+              ),
+            ),
           ),
         ),
       ],

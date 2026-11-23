@@ -173,8 +173,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(KioskCounterScreen), findsOneWidget);
-      // The number is local and instant — no network was involved.
-      expect(find.text('1'), findsWidgets);
+      // The CODE is local and instant — no network was involved. Four
+      // characters since 2026-11-23: a customer cannot hold on to "1", and it
+      // is also what the other borne calls its first sale.
+      expect(
+        // The station is DERIVED from the device id here, so it is derived in
+        // the assertion too — a literal would be asserting the test's own
+        // guess at `stationCodeFor`.
+        find.text(
+          ticketLabel(number: 1, station: stationCodeFor('kiosk-door')),
+        ),
+        findsWidgets,
+        reason: 'the counter screen shows the printed code, not the sequence',
+      );
 
       final List<PosOrder> orders = store.allOrders();
       expect(orders, hasLength(1));
