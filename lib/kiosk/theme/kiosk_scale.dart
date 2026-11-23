@@ -15,7 +15,7 @@ abstract final class KioskScale {
   /// A category tile: icon, name, and the number of dishes behind it. Taller
   /// than [minTarget] because it stacks three things, not because a bigger
   /// target was wanted.
-  static const double categoryTileHeight = 112;
+  static const double categoryTileHeight = 88;
 
   /// The 8pt grid the rest of the product is on (§13.1), used at kiosk sizes.
   static const double gap = 8;

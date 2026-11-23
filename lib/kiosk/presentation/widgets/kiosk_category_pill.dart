@@ -69,7 +69,7 @@ class KioskCategoryPill extends StatelessWidget {
             borderRadius: BorderRadius.circular(KioskScale.radius),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: KioskScale.gapLg,
+                horizontal: KioskScale.gapMd,
                 // ⚠ The HEIGHT now comes from the strip
                 // ([KioskScale.categoryTileHeight]), so this padding only has
                 // to leave the icon, the name and the count room inside it.

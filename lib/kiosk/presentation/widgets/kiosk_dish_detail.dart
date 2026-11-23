@@ -30,10 +30,24 @@ import 'allergen_labels.dart';
 /// because on an older Android a glyph the system font lacks renders as
 /// nothing at all, which this project has shipped once already.
 class KioskDishDetail extends StatelessWidget {
-  const KioskDishDetail({required this.product, required this.french, super.key});
+  const KioskDishDetail({
+    required this.product,
+    required this.french,
+    this.removed = const <String>{},
+    this.onToggleRemoved,
+    super.key,
+  });
 
   final SnapshotProduct product;
   final bool french;
+
+  /// Ingredient ids the customer has asked to leave out.
+  final Set<String> removed;
+
+  /// Null on a read-only rendering. When given, a REMOVABLE ingredient
+  /// becomes a toggle — which is the only way "sans piment" can ever reach a
+  /// kitchen ticket from a borne.
+  final void Function(String ingredientId)? onToggleRemoved;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +98,15 @@ class KioskDishDetail extends StatelessWidget {
             runSpacing: KioskScale.gap,
             children: <Widget>[
               for (final SnapshotIngredient i in product.ingredients)
-                _IngredientChip(ingredient: i, french: french),
+                _IngredientChip(
+                  ingredient: i,
+                  french: french,
+                  removed: removed.contains(i.ingredientId),
+                  onToggle: onToggleRemoved == null || !i.removable
+                      ? null
+                      : () => onToggleRemoved!(i.ingredientId),
+                  l10n: l10n,
+                ),
             ],
           ),
         ],
@@ -205,7 +227,10 @@ class _Pill extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
     ),
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: KioskScale.gapMd, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: KioskScale.gapMd,
+        vertical: 4,
+      ),
       child: Text(
         label,
         style: const TextStyle(
@@ -221,53 +246,110 @@ class _Pill extends StatelessWidget {
 /// One ingredient: its mark, its name, and — when the kitchen allows it — the
 /// fact that it can be left out.
 class _IngredientChip extends StatelessWidget {
-  const _IngredientChip({required this.ingredient, required this.french});
+  const _IngredientChip({
+    required this.ingredient,
+    required this.french,
+    required this.removed,
+    required this.onToggle,
+    required this.l10n,
+  });
 
   final SnapshotIngredient ingredient;
   final bool french;
+  final bool removed;
+  final VoidCallback? onToggle;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     final String name = french ? ingredient.nameFr : ingredient.nameEn;
     final bool allergenic = ingredient.allergenTags.isNotEmpty;
     final String? mark = ingredient.icon?.trim();
+    final bool canRemove = onToggle != null;
+
+    final Color border = removed
+        ? AppColors.error
+        : allergenic
+        ? AppColors.error
+        : AppColors.controlBorder;
+
+    final Widget chip = DecoratedBox(
+      decoration: BoxDecoration(
+        // A removed ingredient is struck through AND tinted AND prefixed
+        // "Sans" — three signals, because one of them is colour and colour
+        // alone is not a signal to everybody.
+        color: removed
+            ? AppColors.error.withValues(alpha: 0.08)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(KioskScale.radius),
+        border: Border.all(color: border, width: removed || allergenic ? 2 : 1),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          KioskScale.gapMd,
+          KioskScale.gap,
+          canRemove ? KioskScale.gap : KioskScale.gapMd,
+          KioskScale.gap,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (mark != null && mark.isNotEmpty) ...<Widget>[
+              Opacity(
+                opacity: removed ? 0.45 : 1,
+                child: Text(mark, style: const TextStyle(fontSize: 18)),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              removed ? l10n.kioskDishWithout(name) : name,
+              style: TextStyle(
+                fontSize: KioskScale.labelSize,
+                color: removed ? AppColors.error : AppColors.onSurface,
+                fontWeight: removed ? FontWeight.w700 : FontWeight.w400,
+                decoration: removed ? TextDecoration.lineThrough : null,
+                decorationColor: AppColors.error,
+              ),
+            ),
+            if (canRemove) ...<Widget>[
+              const SizedBox(width: 4),
+              Icon(
+                removed ? Icons.undo : Icons.close,
+                size: 18,
+                color: removed ? AppColors.error : AppColors.textMuted,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    if (!canRemove) {
+      return Semantics(
+        label: allergenic
+            ? '$name, ${french ? 'allergène' : 'allergen'}'
+            : name,
+        child: ExcludeSemantics(child: chip),
+      );
+    }
+
     return Semantics(
-      label: allergenic
-          ? '$name, ${french ? 'allergène' : 'allergen'}'
-          : name,
+      button: true,
+      selected: removed,
+      label: removed
+          ? l10n.kioskDishWithout(name)
+          : '$name, ${l10n.kioskDishRemovableHint}',
       child: ExcludeSemantics(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(KioskScale.radius),
-            border: Border.all(
-              // An allergenic ingredient is outlined here as well as listed
-              // below: the customer who is scanning the list is the one who
-              // needs it, and they may never reach the block.
-              color: allergenic ? AppColors.error : AppColors.controlBorder,
-              width: allergenic ? 2 : 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: KioskScale.gapMd,
-              vertical: KioskScale.gap,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (mark != null && mark.isNotEmpty) ...<Widget>[
-                  Text(mark, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 6),
-                ],
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: KioskScale.labelSize,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-              ],
+        child: SizedBox(
+          // ⚠ The 72 dp touch rule applies: this is on the path a standing
+          // customer taps, and a chip sized to its text is a mis-tap.
+          height: KioskScale.minTarget,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onToggle,
+              borderRadius: BorderRadius.circular(KioskScale.radius),
+              child: Center(child: chip),
             ),
           ),
         ),
@@ -291,7 +373,8 @@ class _AllergenBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '$title: '
+      label:
+          '$title: '
           '${allergens.map((String a) => allergenLabel(a, french: french)).join(', ')}',
       child: ExcludeSemantics(
         child: Container(

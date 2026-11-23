@@ -293,4 +293,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kioskDishAllergens => 'Contains';
+
+  @override
+  String kioskDishWithout(String name) {
+    return 'No $name';
+  }
+
+  @override
+  String get kioskDishRemovableHint => 'Tap to leave out';
 }

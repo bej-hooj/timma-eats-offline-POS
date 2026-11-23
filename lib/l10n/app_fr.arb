@@ -176,5 +176,14 @@
   "kioskManagerPairWaitingBody": "Sur la tablette cuisine, touchez « Apparier en un geste ».",
   "kioskManagerPairCodeFallback": "Ou saisissez ce code sur la cuisine",
   "kioskDishIngredients": "INGRÉDIENTS",
-  "kioskDishAllergens": "Contient"
+  "kioskDishAllergens": "Contient",
+  "kioskDishWithout": "Sans {name}",
+  "kioskDishRemovableHint": "Touchez pour retirer",
+  "@kioskDishWithout": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

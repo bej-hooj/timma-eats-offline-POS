@@ -157,6 +157,77 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a removable ingredient can be left out, and only that one', (
+    tester,
+  ) async {
+    KioskComposition? added;
+    tester.view.physicalSize = const Size(1920, 996);
+    tester.view.devicePixelRatio = 1.75;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        theme: KioskTheme.build(),
+        localizationsDelegates: const <LocalizationsDelegate<Object>>[
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: KioskComposerSheet(
+            product: ndole,
+            cache: null,
+            onCancel: () {},
+            onAdd: (KioskComposition c) => added = c,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // ⚠ Only the ingredient the KITCHEN marked removable is a control. Palm
+    // oil is; ndolé leaves are not — a customer cannot order a ndolé without
+    // ndolé, and letting them tap it would send the kitchen a ticket it has to
+    // refuse at the counter.
+    await tester.ensureVisible(find.text('Feuilles de ndolé'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Feuilles de ndolé'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Sans Feuilles de ndolé'),
+      findsNothing,
+      reason: 'a non-removable ingredient is not a control',
+    );
+
+    await tester.ensureVisible(find.text('Huile de palme'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Huile de palme'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sans Huile de palme'), findsOneWidget);
+    expect(find.text('Huile de palme'), findsNothing);
+
+    await tester.ensureVisible(find.textContaining('Ajouter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Ajouter'));
+    await tester.pumpAndSettle();
+    expect(
+      added?.removedIngredientIds,
+      <String>['i-5'],
+      reason: 'the removal has to leave the screen or the kitchen never hears '
+          'about it',
+    );
+
+    // Tapping again puts it back: a mis-tap must be undoable without closing
+    // the dish.
+    await tester.ensureVisible(find.text('Sans Huile de palme'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sans Huile de palme'));
+    await tester.pumpAndSettle();
+    expect(find.text('Huile de palme'), findsOneWidget);
+  });
+
   testWidgets('a dish with nothing to say still lays out cleanly', (
     tester,
   ) async {

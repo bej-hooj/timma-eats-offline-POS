@@ -15,11 +15,19 @@ class KioskComposition {
     required this.quantity,
     this.variant,
     this.options = const <SnapshotOption>[],
+    this.removedIngredientIds = const <String>[],
   });
 
   final int quantity;
   final SnapshotVariant? variant;
   final List<SnapshotOption> options;
+
+  /// Ingredients the customer asked to leave out — "sans piment".
+  ///
+  /// ⚠ Ids only. The engine snapshots the NAMES from the pinned bundle at
+  /// sale time, so the kitchen ticket still reads correctly after the
+  /// dashboard renames an ingredient.
+  final List<String> removedIngredientIds;
 }
 
 /// Variants and option groups at parity with the phone app's composer.
@@ -52,6 +60,16 @@ class KioskComposerSheet extends StatefulWidget {
 
 class _KioskComposerSheetState extends State<KioskComposerSheet> {
   final Map<String, Set<String>> _chosen = <String, Set<String>>{};
+
+  /// Ingredients the customer has asked the kitchen to leave out.
+  ///
+  /// ⚠ This is NOT an option group and must not be modelled as one: it charges
+  /// nothing, has no minimum, and the engine validates it against
+  /// `ingredients.removable` rather than against a group's bounds. It exists so
+  /// "sans piment" reaches a kitchen ticket instead of being said out loud to
+  /// a screen.
+  final Set<String> _removed = <String>{};
+
   SnapshotVariant? _variant;
   int _quantity = 1;
 
@@ -176,7 +194,14 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                   flex: 6,
                   child: ListView(
                     children: <Widget>[
-                      KioskDishDetail(product: widget.product, french: french),
+                      KioskDishDetail(
+                        product: widget.product,
+                        french: french,
+                        removed: _removed,
+                        onToggleRemoved: (String id) => setState(() {
+                          if (!_removed.remove(id)) _removed.add(id);
+                        }),
+                      ),
                       if (hasChoices) ...<Widget>[
                         const SizedBox(height: KioskScale.gapLg),
                         if (widget.product.variants.isNotEmpty)
@@ -247,6 +272,7 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                             quantity: _quantity,
                             variant: _variant,
                             options: _selectedOptions,
+                            removedIngredientIds: _removed.toList(),
                           ),
                         )
                       : null,

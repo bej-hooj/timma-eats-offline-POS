@@ -216,8 +216,18 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
     // strip falls back to icon-beside-label at the ordinary touch height.
     final bool compactCategories = MediaQuery.sizeOf(context).height < 560;
 
+    // ⚠ The chrome was eating the menu. Measured on the GM92 (569 dp tall):
+    // 40 dp of padding top and bottom, a 40 pt title, a 224 dp language
+    // button and a 112 dp category strip left the dish grid under half the
+    // screen. The page keeps its generous SIDE margins — a kiosk is touched,
+    // not read at a desk — and gives the vertical back to the dishes.
     return Padding(
-      padding: const EdgeInsets.all(KioskScale.gapXl),
+      padding: const EdgeInsets.fromLTRB(
+        KioskScale.gapXl,
+        KioskScale.gapLg,
+        KioskScale.gapXl,
+        KioskScale.gapLg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -236,7 +246,9 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                   l10n.kioskMenuTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineLarge,
+                  // One step down from `headlineLarge`: the title names the
+                  // screen, the dishes are the screen.
+                  style: theme.textTheme.headlineSmall,
                 ),
               ),
               const SizedBox(width: KioskScale.gapLg),
@@ -281,10 +293,36 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: KioskScale.gapLg),
-              OutlinedButton(
-                onPressed: widget.onToggleLanguage,
-                child: Text(french ? 'English' : 'Français'),
+              const SizedBox(width: KioskScale.gapMd),
+              // ⚠ NOT the themed `OutlinedButton`. That theme is built for the
+              // menu path — a 144 dp minimum plus 40 dp of horizontal padding,
+              // so a two-word label came out about 224 dp wide for a control
+              // nobody came here to press. The HIT AREA stays the full 72 dp
+              // touch target; only the ink shrinks, and the label becomes the
+              // language it switches TO.
+              SizedBox(
+                height: KioskScale.minTarget,
+                child: OutlinedButton(
+                  onPressed: widget.onToggleLanguage,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(
+                      KioskScale.minTarget,
+                      KioskScale.minTarget,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: KioskScale.gapMd,
+                    ),
+                    side: const BorderSide(
+                      color: AppColors.controlBorder,
+                      width: 2,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: KioskScale.labelSize,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  child: Text(french ? 'EN' : 'FR'),
+                ),
               ),
             ],
           ),

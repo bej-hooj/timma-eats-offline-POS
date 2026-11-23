@@ -176,5 +176,14 @@
   "kioskManagerPairWaitingBody": "On the kitchen tablet, tap “Pair with one tap”.",
   "kioskManagerPairCodeFallback": "Or type this code on the kitchen",
   "kioskDishIngredients": "INGREDIENTS",
-  "kioskDishAllergens": "Contains"
+  "kioskDishAllergens": "Contains",
+  "kioskDishWithout": "No {name}",
+  "kioskDishRemovableHint": "Tap to leave out",
+  "@kioskDishWithout": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -403,7 +403,10 @@ void main() {
       await tester.tap(find.byType(KioskAttractScreen));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'English'));
+      // ⚠ The label is the language it switches TO, abbreviated: the full
+      // word in a themed button came out ~224 dp wide for a control nobody
+      // came to the borne to press, and it was eating the dish grid.
+      await tester.tap(find.widgetWithText(OutlinedButton, 'EN'));
       await tester.pumpAndSettle();
       expect(find.text('Our menu'), findsOneWidget);
       expect(find.text('Chicken DG'), findsOneWidget);

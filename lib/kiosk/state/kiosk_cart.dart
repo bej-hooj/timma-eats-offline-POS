@@ -15,6 +15,7 @@ class KioskCartItem {
     required this.quantity,
     this.variant,
     this.options = const <SnapshotOption>[],
+    this.removedIngredientIds = const <String>[],
   });
 
   final String lineId;
@@ -22,6 +23,9 @@ class KioskCartItem {
   final int quantity;
   final SnapshotVariant? variant;
   final List<SnapshotOption> options;
+
+  /// What the customer asked to leave out, by ingredient id.
+  final List<String> removedIngredientIds;
 
   /// Minor units, for the customer to read. See the class note.
   ///
@@ -48,6 +52,11 @@ class KioskCartItem {
     quantity: quantity ?? this.quantity,
     variant: variant,
     options: options,
+    // ⚠ Carried, like the options. A `copyWith` that drops a field silently
+    // loses it on the next quantity tap — the customer presses "+" in the
+    // basket and their "sans piment" is gone, with nothing on screen to say
+    // so.
+    removedIngredientIds: removedIngredientIds,
   );
 
   /// Ids and quantities. The client proposes; the snapshot decides.
@@ -59,6 +68,7 @@ class KioskCartItem {
       for (final SnapshotOption o in options)
         PosCartOption(optionId: o.optionId),
     ],
+    removedIngredientIds: removedIngredientIds,
   );
 }
 

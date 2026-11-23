@@ -595,6 +595,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Contient'**
   String get kioskDishAllergens;
+
+  /// No description provided for @kioskDishWithout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans {name}'**
+  String kioskDishWithout(String name);
+
+  /// No description provided for @kioskDishRemovableHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez pour retirer'**
+  String get kioskDishRemovableHint;
 }
 
 class _AppLocalizationsDelegate
