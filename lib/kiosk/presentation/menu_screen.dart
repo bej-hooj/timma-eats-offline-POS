@@ -8,6 +8,7 @@ import '../catalog/dish_photo_cache.dart';
 import '../theme/kiosk_scale.dart';
 import 'package:timma_kiosk/kiosk/motion/kiosk_fly_to_cart.dart';
 import 'widgets/kiosk_category_pill.dart';
+import 'widgets/kiosk_scrollable.dart';
 import 'widgets/kiosk_dish_card.dart';
 
 /// How big one dish card is on the screen this kiosk actually has.
@@ -140,6 +141,11 @@ bool _canQuickAdd(SnapshotProduct product) {
 }
 
 class _KioskMenuScreenState extends State<KioskMenuScreen> {
+  /// The dish grid's own controller — [KioskScrollable] listens to it to know
+  /// whether there is menu below the fold. On a borne that matters more than
+  /// anywhere else: a customer who does not know the menu continues does not
+  /// experiment, they order from what they can see.
+  final ScrollController _gridScroll = ScrollController();
   final TextEditingController _search = TextEditingController();
 
   /// One key per dish, so the bubble can start from the "+" that was actually
@@ -152,6 +158,7 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
 
   @override
   void dispose() {
+    _gridScroll.dispose();
     _search.dispose();
     super.dispose();
   }
@@ -451,62 +458,66 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                   constraints.maxWidth,
                   constraints.maxHeight,
                 );
-                return GridView.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    // Max-extent rather than the app's fixed 2 columns: the
-                    // app grid is two-up because a phone is 411 dp WIDE, and
-                    // copying the count to a landscape kiosk would give two
-                    // enormous cards and barely one dish per screen. Copying
-                    // the card's size and proportion, and letting the column
-                    // count fall out of the width, is what preserves the
-                    // design here.
-                    maxCrossAxisExtent: metrics.cardWidth,
-                    // ⚠ The gutter is also the card size (the app card's own
-                    // warning). 24 is `AppSpacing.l`, the gutter the app grid
-                    // uses, so the space between dishes matches as well.
-                    mainAxisSpacing: KioskScale.gapLg,
-                    crossAxisSpacing: KioskScale.gapLg,
-                    mainAxisExtent: metrics.cardHeight,
+                return KioskScrollable(
+                  controller: _gridScroll,
+                  child: GridView.builder(
+                    controller: _gridScroll,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      // Max-extent rather than the app's fixed 2 columns: the
+                      // app grid is two-up because a phone is 411 dp WIDE, and
+                      // copying the count to a landscape kiosk would give two
+                      // enormous cards and barely one dish per screen. Copying
+                      // the card's size and proportion, and letting the column
+                      // count fall out of the width, is what preserves the
+                      // design here.
+                      maxCrossAxisExtent: metrics.cardWidth,
+                      // ⚠ The gutter is also the card size (the app card's own
+                      // warning). 24 is `AppSpacing.l`, the gutter the app grid
+                      // uses, so the space between dishes matches as well.
+                      mainAxisSpacing: KioskScale.gapLg,
+                      crossAxisSpacing: KioskScale.gapLg,
+                      mainAxisExtent: metrics.cardHeight,
+                    ),
+                    itemCount: shown.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final SnapshotProduct product = shown[index];
+                      return KioskDishCard(
+                        name: french ? product.nameFr : product.nameEn,
+                        price: MoneyFormatter.formatXaf(product.basePrice),
+                        photoUrl: product.photoUrl,
+                        photoCache: widget.photoCache,
+                        soldOut: !product.available,
+                        soldOutLabel: l10n.kioskSoldOut,
+                        // R1 meta, straight off the pinned bundle (migration 53).
+                        // ⚠ Heat is `spice_level`, never the `spicy` tag.
+                        prepMin: product.prepMin,
+                        prepMax: product.prepMax,
+                        spiceLevel: product.spiceLevel,
+                        origin: french ? product.originFr : product.originEn,
+                        // Sold out is a barrier, not a badge: the card is not
+                        // tappable at all, so the composer can never be reached
+                        // for a dish the kitchen cannot make (§K4 rule 4).
+                        onTap: product.available
+                            ? () => widget.onPick(product)
+                            : null,
+                        quickAddKey: _addKeys.putIfAbsent(
+                          product.productId,
+                          GlobalKey.new,
+                        ),
+                        onQuickAdd:
+                            widget.onQuickAdd != null && _canQuickAdd(product)
+                            ? () {
+                                final GlobalKey key =
+                                    _addKeys[product.productId]!;
+                                widget.onQuickAdd!(
+                                  product,
+                                  centerOf(key) ?? Offset.zero,
+                                );
+                              }
+                            : null,
+                      );
+                    },
                   ),
-                  itemCount: shown.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final SnapshotProduct product = shown[index];
-                    return KioskDishCard(
-                      name: french ? product.nameFr : product.nameEn,
-                      price: MoneyFormatter.formatXaf(product.basePrice),
-                      photoUrl: product.photoUrl,
-                      photoCache: widget.photoCache,
-                      soldOut: !product.available,
-                      soldOutLabel: l10n.kioskSoldOut,
-                      // R1 meta, straight off the pinned bundle (migration 53).
-                      // ⚠ Heat is `spice_level`, never the `spicy` tag.
-                      prepMin: product.prepMin,
-                      prepMax: product.prepMax,
-                      spiceLevel: product.spiceLevel,
-                      origin: french ? product.originFr : product.originEn,
-                      // Sold out is a barrier, not a badge: the card is not
-                      // tappable at all, so the composer can never be reached
-                      // for a dish the kitchen cannot make (§K4 rule 4).
-                      onTap: product.available
-                          ? () => widget.onPick(product)
-                          : null,
-                      quickAddKey: _addKeys.putIfAbsent(
-                        product.productId,
-                        GlobalKey.new,
-                      ),
-                      onQuickAdd:
-                          widget.onQuickAdd != null && _canQuickAdd(product)
-                          ? () {
-                              final GlobalKey key =
-                                  _addKeys[product.productId]!;
-                              widget.onQuickAdd!(
-                                product,
-                                centerOf(key) ?? Offset.zero,
-                              );
-                            }
-                          : null,
-                    );
-                  },
                 );
               },
             ),

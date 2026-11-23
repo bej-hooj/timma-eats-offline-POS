@@ -6,6 +6,7 @@ import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import '../catalog/dish_photo_cache.dart';
 import 'widgets/kiosk_dish_detail.dart';
+import 'widgets/kiosk_scrollable.dart';
 import 'widgets/kiosk_dish_thumb.dart';
 import '../theme/kiosk_scale.dart';
 
@@ -59,6 +60,9 @@ class KioskComposerSheet extends StatefulWidget {
 }
 
 class _KioskComposerSheetState extends State<KioskComposerSheet> {
+  /// Owned here rather than created in `build`: [KioskScrollable] listens to
+  /// it, and a controller rebuilt every frame would re-attach every frame.
+  final ScrollController _detailScroll = ScrollController();
   final Map<String, Set<String>> _chosen = <String, Set<String>>{};
 
   /// Ingredients the customer has asked the kitchen to leave out.
@@ -72,6 +76,12 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
 
   SnapshotVariant? _variant;
   int _quantity = 1;
+
+  @override
+  void dispose() {
+    _detailScroll.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -192,36 +202,45 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                 const SizedBox(width: KioskScale.gapXl),
                 Expanded(
                   flex: 6,
-                  child: ListView(
-                    children: <Widget>[
-                      KioskDishDetail(
-                        product: widget.product,
-                        french: french,
-                        removed: _removed,
-                        onToggleRemoved: (String id) => setState(() {
-                          if (!_removed.remove(id)) _removed.add(id);
-                        }),
-                      ),
-                      if (hasChoices) ...<Widget>[
-                        const SizedBox(height: KioskScale.gapLg),
-                        if (widget.product.variants.isNotEmpty)
-                          _VariantGroup(
-                            variants: widget.product.variants,
-                            selected: _variant,
-                            french: french,
-                            onPick: (SnapshotVariant v) =>
-                                setState(() => _variant = v),
-                          ),
-                        for (final SnapshotOptionGroup group
-                            in widget.product.optionGroups)
-                          _OptionGroupBlock(
-                            group: group,
-                            selected: _chosen[group.groupId]!,
-                            french: french,
-                            onToggle: (SnapshotOption o) => _toggle(group, o),
-                          ),
+                  // ⚠ The one place on the borne where content hides most
+                  // often: a dish with ingredients, allergens AND option
+                  // groups runs past the bottom, and *Accompagnement* — the
+                  // choice that gates the Add button — was cut in half with
+                  // nothing to say so. Seen on the real borne 2026-11-23.
+                  child: KioskScrollable(
+                    controller: _detailScroll,
+                    child: ListView(
+                      controller: _detailScroll,
+                      children: <Widget>[
+                        KioskDishDetail(
+                          product: widget.product,
+                          french: french,
+                          removed: _removed,
+                          onToggleRemoved: (String id) => setState(() {
+                            if (!_removed.remove(id)) _removed.add(id);
+                          }),
+                        ),
+                        if (hasChoices) ...<Widget>[
+                          const SizedBox(height: KioskScale.gapLg),
+                          if (widget.product.variants.isNotEmpty)
+                            _VariantGroup(
+                              variants: widget.product.variants,
+                              selected: _variant,
+                              french: french,
+                              onPick: (SnapshotVariant v) =>
+                                  setState(() => _variant = v),
+                            ),
+                          for (final SnapshotOptionGroup group
+                              in widget.product.optionGroups)
+                            _OptionGroupBlock(
+                              group: group,
+                              selected: _chosen[group.groupId]!,
+                              french: french,
+                              onToggle: (SnapshotOption o) => _toggle(group, o),
+                            ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ],

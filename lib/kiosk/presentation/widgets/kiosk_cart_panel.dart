@@ -9,6 +9,7 @@ import '../../catalog/dish_photo_cache.dart';
 import '../../state/kiosk_cart.dart';
 import '../../theme/kiosk_scale.dart';
 import 'kiosk_dish_thumb.dart';
+import 'kiosk_scrollable.dart';
 
 /// The basket, standing permanently beside the menu (owner, 2026-11-22:
 /// *"we can even have a side menu to show what's on the cart already and
@@ -30,7 +31,7 @@ import 'kiosk_dish_thumb.dart';
 /// from the pinned bundle at placement. The client never does money arithmetic
 /// of its own (CLAUDE.md §0.2) — a panel that added up its own rows would be a
 /// second opinion about a price, and the one on the slip would win.
-class KioskCartPanel extends StatelessWidget {
+class KioskCartPanel extends StatefulWidget {
   const KioskCartPanel({
     required this.cart,
     required this.onCheckout,
@@ -67,11 +68,25 @@ class KioskCartPanel extends StatelessWidget {
   final DishPhotoCache? photoCache;
 
   @override
+  State<KioskCartPanel> createState() => _KioskCartPanelState();
+}
+
+class _KioskCartPanelState extends State<KioskCartPanel> {
+  /// Owned here: [KioskScrollable] listens to it.
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
     return Container(
-      width: panelWidth,
+      width: KioskCartPanel.panelWidth,
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.horizontal(
@@ -85,22 +100,26 @@ class KioskCartPanel extends StatelessWidget {
           Text(l10n.kioskCartTitle, style: theme.textTheme.headlineSmall),
           const SizedBox(height: KioskScale.gapMd),
           Expanded(
-            child: cart.isEmpty
+            child: widget.cart.isEmpty
                 ? _Empty(l10n: l10n)
-                : ListView.separated(
-                    itemCount: cart.items.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: KioskScale.gap),
-                    itemBuilder: (BuildContext context, int index) {
-                      final KioskCartItem item = cart.items[index];
-                      return _Line(
-                        item: item,
-                        photoCache: photoCache,
-                        onIncrement: () => onIncrement(item),
-                        onDecrement: () => onDecrement(item),
-                        onRemove: () => onRemove(item),
-                      );
-                    },
+                : KioskScrollable(
+                    controller: _scroll,
+                    child: ListView.separated(
+                      controller: _scroll,
+                      itemCount: widget.cart.items.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: KioskScale.gap),
+                      itemBuilder: (BuildContext context, int index) {
+                        final KioskCartItem item = widget.cart.items[index];
+                        return _Line(
+                          item: item,
+                          photoCache: widget.photoCache,
+                          onIncrement: () => widget.onIncrement(item),
+                          onDecrement: () => widget.onDecrement(item),
+                          onRemove: () => widget.onRemove(item),
+                        );
+                      },
+                    ),
                   ),
           ),
           const Divider(height: KioskScale.gapLg),
@@ -113,7 +132,7 @@ class KioskCartPanel extends StatelessWidget {
                 ),
               ),
               Text(
-                MoneyFormatter.formatXaf(cart.subtotal),
+                MoneyFormatter.formatXaf(widget.cart.subtotal),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
@@ -128,7 +147,7 @@ class KioskCartPanel extends StatelessWidget {
             // appears when the first dish is added moves the whole panel under
             // the customer's finger mid-tap.
             child: FilledButton(
-              onPressed: cart.isEmpty ? null : onCheckout,
+              onPressed: widget.cart.isEmpty ? null : widget.onCheckout,
               child: Text(l10n.kioskCartConfirm),
             ),
           ),
