@@ -75,10 +75,15 @@ void main() {
     ],
   );
 
-  Future<void> pump(WidgetTester tester, SnapshotProduct dish) async {
+  Future<void> pump(
+    WidgetTester tester,
+    SnapshotProduct dish, {
+    Size size = const Size(1920, 996),
+    double ratio = 1.75,
+  }) async {
     // The GM92 the borne runs on: 1920 x 1080 px at 280 dpi.
-    tester.view.physicalSize = const Size(1920, 996);
-    tester.view.devicePixelRatio = 1.75;
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = ratio;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
@@ -248,6 +253,45 @@ void main() {
     expect(find.text('Contient'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  /// Owner, 2026-11-24: *"the responsiveness of the borne app is not fully
+  /// done — in portrait some views were bad"*. The dish page is a two-column
+  /// layout, and a column layout on a tall narrow screen is where that shows.
+  for (final (String name, Size size, double ratio) in <(String, Size, double)>[
+    ('portrait 1080x1920', Size(1080, 1920), 1.0),
+    ('portrait tablet 800x1280', Size(1600, 2560), 2.0),
+    ('television 1080p', Size(1920, 1080), 1.0),
+    ('television 4K', Size(3840, 2160), 1.0),
+    ('budget 7-inch 640x400', Size(1280, 800), 2.0),
+  ]) {
+    testWidgets('the dish page holds together — $name', (tester) async {
+      await pump(tester, ndole, size: size, ratio: ratio);
+
+      expect(tester.takeException(), isNull, reason: 'overflow at $name');
+
+      // Everything a customer must be able to see is drawn.
+      expect(find.text('Ndolé'), findsWidgets, reason: name);
+      expect(find.text('Arachides'), findsWidgets, reason: name);
+
+      // ⚠ And the ACTION is inside the viewport, with no scrolling. The
+      // ingredients and the allergen block live in a scroll area and may
+      // legitimately sit below the fold — that is what the scrollbar and the
+      // edge fade are for — but a customer who cannot reach *Ajouter* cannot
+      // order at all. "The widget exists" is what let a clipped price ship.
+      final double h = size.height / ratio;
+      final double w = size.width / ratio;
+      for (final Finder f in <Finder>[
+        find.text('Ndolé'),
+        find.textContaining('Ajouter'),
+      ]) {
+        expect(f, findsWidgets, reason: name);
+        final Rect r = tester.getRect(f.first);
+        expect(r.bottom, lessThanOrEqualTo(h + 0.5), reason: '$name bottom');
+        expect(r.right, lessThanOrEqualTo(w + 0.5), reason: '$name right');
+        expect(r.top, greaterThanOrEqualTo(-0.5), reason: '$name top');
+      }
+    });
+  }
 
   testWidgets('nothing overflows at the borne\'s real size, in French', (
     tester,

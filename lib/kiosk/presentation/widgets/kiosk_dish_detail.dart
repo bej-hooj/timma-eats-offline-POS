@@ -301,14 +301,25 @@ class _IngredientChip extends StatelessWidget {
               ),
               const SizedBox(width: 6),
             ],
-            Text(
-              removed ? l10n.kioskDishWithout(name) : name,
-              style: TextStyle(
-                fontSize: KioskScale.labelSize,
-                color: removed ? AppColors.error : AppColors.onSurface,
-                fontWeight: removed ? FontWeight.w700 : FontWeight.w400,
-                decoration: removed ? TextDecoration.lineThrough : null,
-                decorationColor: AppColors.error,
+            // ⚠ **Flexible, or the chip overflows its own column.** Measured
+            // 2026-11-24 at 1080x1920 portrait: the dish page's right column
+            // is narrow there, "Feuilles de ndolé" made the chip wider than
+            // the space, and the Row ran 83 px past it with the yellow stripe
+            // drawn across an ingredient list a customer may be allergic to.
+            // A `Wrap` places chips, it does not shrink them — the chip has
+            // to be able to give.
+            Flexible(
+              child: Text(
+                removed ? l10n.kioskDishWithout(name) : name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: KioskScale.labelSize,
+                  color: removed ? AppColors.error : AppColors.onSurface,
+                  fontWeight: removed ? FontWeight.w700 : FontWeight.w400,
+                  decoration: removed ? TextDecoration.lineThrough : null,
+                  decorationColor: AppColors.error,
+                ),
               ),
             ),
             if (canRemove) ...<Widget>[

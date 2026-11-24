@@ -81,43 +81,83 @@ class KioskCartScreen extends StatelessWidget {
                   ),
           ),
           const Divider(height: KioskScale.gapXl),
-          Row(
-            children: <Widget>[
-              // Stacked, and flexible: at the real kiosk width (1200 logical,
-              // landscape) a side-by-side label + total + two kiosk-sized
-              // buttons overflowed by 83 px, which on the tablet is a customer
-              // who cannot see the *Commander* button at all.
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      l10n.kioskCartTotal,
-                      style: theme.textTheme.labelLarge,
-                    ),
-                    Text(
-                      MoneyFormatter.formatXaf(cart.subtotal),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.headlineLarge?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: KioskScale.gapMd),
-              OutlinedButton(
+          // ⚠ **The footer is laid out for the room it has.** Measured
+          // 2026-11-24: side by side, the total and the two kiosk-sized
+          // buttons ran 40 px off a 868 dp screen at text scale 1.3 and
+          // 30 px off the bottom of a 640x400 one. The control that goes
+          // first is *Commander* — a basket a customer cannot confirm while
+          // standing there with their money out.
+          //
+          // Wide: total left, actions right. Narrow: the total on its own
+          // line and the two actions sharing the width, each able to shrink
+          // its own label rather than push its neighbour off.
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints box) {
+              // Scaled by the viewer's text size — see the note on the row.
+              final bool narrow =
+                  box.maxWidth <
+                  900 * MediaQuery.textScalerOf(context).scale(1);
+              final Widget total = Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(l10n.kioskCartTotal, style: theme.textTheme.labelLarge),
+                  Text(
+                    MoneyFormatter.formatXaf(cart.subtotal),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        (narrow
+                                ? theme.textTheme.headlineSmall
+                                : theme.textTheme.headlineLarge)
+                            ?.copyWith(color: theme.colorScheme.primary),
+                  ),
+                ],
+              );
+              final Widget keep = OutlinedButton(
                 onPressed: onKeepBrowsing,
-                child: Text(l10n.kioskCartKeepBrowsing),
-              ),
-              const SizedBox(width: KioskScale.gapMd),
-              FilledButton(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(l10n.kioskCartKeepBrowsing, maxLines: 1),
+                ),
+              );
+              final Widget confirm = FilledButton(
                 onPressed: cart.isEmpty ? null : onConfirm,
-                child: Text(l10n.kioskCartConfirm),
-              ),
-            ],
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(l10n.kioskCartConfirm, maxLines: 1),
+                ),
+              );
+
+              if (!narrow) {
+                return Row(
+                  children: <Widget>[
+                    Expanded(child: total),
+                    const SizedBox(width: KioskScale.gapMd),
+                    keep,
+                    const SizedBox(width: KioskScale.gapMd),
+                    confirm,
+                  ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  total,
+                  const SizedBox(height: KioskScale.gap),
+                  Row(
+                    children: <Widget>[
+                      Expanded(child: keep),
+                      const SizedBox(width: KioskScale.gapMd),
+                      // The primary action gets the larger share: it is the
+                      // one a customer is reaching for.
+                      Expanded(flex: 2, child: confirm),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -179,82 +219,138 @@ class _CartRow extends StatelessWidget {
       for (final o in item.options) french ? o.nameFr : o.nameEn,
     ];
 
+    // ⚠ **Two rows below 720 dp.** Measured 2026-11-24: at 640 dp the
+    // thumbnail, the name, two 72 dp quantity keys, the line total and the
+    // remove key ran 168 px past the card — the same mistake the side basket
+    // panel made an hour earlier. Six fixed things do not fit a narrow row,
+    // and shaving the controls is not the answer: the dish and its price get
+    // the width, the controls get their own line.
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(KioskScale.gapMd),
-        child: Row(
-          children: <Widget>[
-            // The dish the customer actually chose, not just its name. They
-            // picked a photograph off the menu; seeing it again in the basket is
-            // how they check the basket at a glance (owner, 2026-08-18 — the
-            // cart showed text only).
-            KioskDishThumb(
-              photoUrl: item.product.photoUrl,
-              cache: cache,
-              size: KioskScale.minTarget,
-              radius: KioskScale.gap,
-              iconSize: 28,
-            ),
-            const SizedBox(width: KioskScale.gapMd),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(name, style: theme.textTheme.titleLarge),
-                  if (extras.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: KioskScale.gap),
-                    Text(extras.join(' · '), style: theme.textTheme.labelLarge),
-                  ],
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints box) {
+            // ⚠ Scaled by the viewer's own text size. At text scale 1.3 the
+            // same 868 dp screen holds a third less text, and a threshold in
+            // raw dp let the wide layout run 40 px off the edge there — the
+            // same blind spot that kept a kitchen heading truncated through
+            // three attempts.
+            final bool stacked =
+                box.maxWidth < 720 * MediaQuery.textScalerOf(context).scale(1);
+
+            final Widget dish = Row(
+              children: <Widget>[
+                // The dish the customer actually chose, not just its name.
+                // They picked a photograph off the menu; seeing it again in
+                // the basket is how they check it at a glance.
+                KioskDishThumb(
+                  photoUrl: item.product.photoUrl,
+                  cache: cache,
+                  size: KioskScale.minTarget,
+                  radius: KioskScale.gap,
+                  iconSize: 28,
+                ),
+                const SizedBox(width: KioskScale.gapMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(name, style: theme.textTheme.titleLarge),
+                      if (extras.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: KioskScale.gap),
+                        Text(
+                          extras.join(' · '),
+                          style: theme.textTheme.labelLarge,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            );
+
+            final Widget controls = Row(
+              mainAxisSize: stacked ? MainAxisSize.max : MainAxisSize.min,
+              children: <Widget>[
+                if (stacked)
+                  Expanded(
+                    child: Text(
+                      MoneyFormatter.formatXaf(item.lineTotal),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
+                IconButton.outlined(
+                  iconSize: 32,
+                  onPressed: () => onQuantity(item.quantity - 1),
+                  icon: const Icon(Icons.remove),
+                  constraints: const BoxConstraints(
+                    minWidth: KioskScale.minTarget,
+                    minHeight: KioskScale.minTarget,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KioskScale.gapMd,
+                  ),
+                  child: Text(
+                    '${item.quantity}',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                ),
+                IconButton.outlined(
+                  iconSize: 32,
+                  onPressed: () => onQuantity(item.quantity + 1),
+                  icon: const Icon(Icons.add),
+                  constraints: const BoxConstraints(
+                    minWidth: KioskScale.minTarget,
+                    minHeight: KioskScale.minTarget,
+                  ),
+                ),
+                if (!stacked) ...<Widget>[
+                  const SizedBox(width: KioskScale.gapLg),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 160),
+                    child: Text(
+                      MoneyFormatter.formatXaf(item.lineTotal),
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
                 ],
-              ),
-            ),
-            IconButton.outlined(
-              iconSize: 32,
-              onPressed: () => onQuantity(item.quantity - 1),
-              icon: const Icon(Icons.remove),
-              constraints: const BoxConstraints(
-                minWidth: KioskScale.minTarget,
-                minHeight: KioskScale.minTarget,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: KioskScale.gapMd),
-              child: Text(
-                '${item.quantity}',
-                style: theme.textTheme.titleLarge,
-              ),
-            ),
-            IconButton.outlined(
-              iconSize: 32,
-              onPressed: () => onQuantity(item.quantity + 1),
-              icon: const Icon(Icons.add),
-              constraints: const BoxConstraints(
-                minWidth: KioskScale.minTarget,
-                minHeight: KioskScale.minTarget,
-              ),
-            ),
-            const SizedBox(width: KioskScale.gapLg),
-            ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 160),
-              child: Text(
-                MoneyFormatter.formatXaf(item.lineTotal),
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleLarge,
-              ),
-            ),
-            IconButton(
-              iconSize: 32,
-              onPressed: onRemove,
-              tooltip: removeLabel,
-              icon: const Icon(Icons.close),
-              constraints: const BoxConstraints(
-                minWidth: KioskScale.minTarget,
-                minHeight: KioskScale.minTarget,
-              ),
-            ),
-          ],
+                IconButton(
+                  iconSize: 32,
+                  onPressed: onRemove,
+                  tooltip: removeLabel,
+                  icon: const Icon(Icons.close),
+                  constraints: const BoxConstraints(
+                    minWidth: KioskScale.minTarget,
+                    minHeight: KioskScale.minTarget,
+                  ),
+                ),
+              ],
+            );
+
+            if (!stacked) {
+              return Row(
+                children: <Widget>[
+                  Expanded(child: dish),
+                  controls,
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                dish,
+                const SizedBox(height: KioskScale.gap),
+                controls,
+              ],
+            );
+          },
         ),
       ),
     );
