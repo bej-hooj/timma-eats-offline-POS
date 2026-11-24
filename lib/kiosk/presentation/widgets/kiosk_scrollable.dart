@@ -46,6 +46,13 @@ class KioskScrollable extends StatefulWidget {
   State<KioskScrollable> createState() => _KioskScrollableState();
 }
 
+/// The bar itself.
+const double _barThickness = 6;
+
+/// What the content gives up so the bar never lies on top of it: the bar plus
+/// a little air on each side.
+const double _gutter = _barThickness + 10;
+
 class _KioskScrollableState extends State<KioskScrollable> {
   bool _atStart = true;
   bool _atEnd = true;
@@ -92,9 +99,21 @@ class _KioskScrollableState extends State<KioskScrollable> {
       // finger is down, which is a hint you have to already be scrolling to
       // see.
       thumbVisibility: true,
-      thickness: 6,
+      thickness: _barThickness,
       radius: const Radius.circular(3),
-      child: widget.child,
+      // ⚠ **The bar gets its own gutter; it does not sit on the content.**
+      // Owner, 2026-11-24: *"the scroll indicator should not overlap the
+      // scrollable content"*. A `Scrollbar` paints over its child by default,
+      // and on a menu that means a thumb lying across a dish photograph and,
+      // worse, across a price. Insetting the CHILD rather than moving the bar
+      // keeps the bar where a thumb expects it — hard against the edge — and
+      // puts the content beside it.
+      child: Padding(
+        padding: vertical
+            ? const EdgeInsets.only(right: _gutter)
+            : const EdgeInsets.only(bottom: _gutter),
+        child: widget.child,
+      ),
     );
 
     // Nothing to say: no fade, no mask, no extra compositing layer.

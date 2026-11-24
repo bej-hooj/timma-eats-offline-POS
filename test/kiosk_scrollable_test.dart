@@ -53,6 +53,22 @@ void main() {
     expect(find.byType(Scrollbar), findsOneWidget);
   });
 
+  testWidgets('the bar sits BESIDE the content, never on it', (tester) async {
+    await pump(tester, items: 20);
+
+    // ⚠ Owner, 2026-11-24: a `Scrollbar` paints over its child by default,
+    // and on a menu that means a thumb lying across a dish photograph — or a
+    // price. The content is inset instead, so the two never share pixels.
+    final double content = tester.getSize(find.byType(ListView)).width;
+    final double box = tester.getSize(find.byType(KioskScrollable)).width;
+    expect(
+      content,
+      lessThan(box),
+      reason: 'the list filled the whole width, so the bar is drawn on it',
+    );
+    expect(box - content, greaterThanOrEqualTo(6));
+  });
+
   testWidgets('a list that fits says nothing at all', (tester) async {
     await pump(tester, items: 2);
 
