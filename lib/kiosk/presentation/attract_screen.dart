@@ -89,7 +89,17 @@ class _KioskAttractScreenState extends State<KioskAttractScreen>
               final double height = constraints.maxHeight.isFinite
                   ? constraints.maxHeight
                   : 800;
+              final double width = constraints.maxWidth.isFinite
+                  ? constraints.maxWidth
+                  : 1200;
               final double markSize = (height * 0.22).clamp(72.0, 160.0);
+              // ⚠ **And the WIDTH, which was never bounded.** Seen on the
+              // borne in portrait 2026-11-24: the logo is a wide inline
+              // wordmark, `height` alone made it wider than the screen, and
+              // "TIMMA" was clipped at BOTH edges — on the first thing a
+              // customer sees of the restaurant. `BoxFit.contain` can only
+              // fit what it is given room to fit.
+              final double markWidth = width - KioskScale.gapXl * 2;
               final double breather = (height * 0.08).clamp(
                 KioskScale.gapMd,
                 KioskScale.gapXxl,
@@ -120,6 +130,7 @@ class _KioskAttractScreenState extends State<KioskAttractScreen>
                         Image.asset(
                           'assets/branding/logo_inline.png',
                           height: markSize,
+                          width: markWidth,
                           fit: BoxFit.contain,
                           errorBuilder:
                               (BuildContext _, Object _, StackTrace? _) =>

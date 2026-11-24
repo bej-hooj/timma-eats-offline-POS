@@ -47,6 +47,42 @@ void main() {
     ),
   );
 
+  /// The attract screen is the first thing anyone sees of the restaurant, and
+  /// it has overflowed twice before. This sweeps the shapes it now has to
+  /// survive — portrait, a tall tablet, a 4K television and a 640x400 board.
+  for (final (String name, Size size, double ratio) in <(String, Size, double)>[
+    ('portrait 1080x1920', Size(1080, 1920), 1.0),
+    ('portrait tablet 800x1280', Size(1600, 2560), 2.0),
+    ('television 4K', Size(3840, 2160), 1.0),
+    ('budget 7-inch 640x400', Size(1280, 800), 2.0),
+  ]) {
+    testWidgets('the logo stays inside the screen — $name', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(host(screen: size / ratio, keyboard: 0));
+      // ⚠ Not `pumpAndSettle`: the attract screen breathes on a repeating
+      // animation, so settling never happens.
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull, reason: 'overflow at $name');
+      expect(find.text('Commandez ici'), findsOneWidget, reason: name);
+
+      // ⚠ **No assertion on the logo's rect here, deliberately.** One was
+      // written and deleted the same minute: at the clamped mark size the
+      // wordmark fits every one of these widths, so the assertion passed with
+      // the width bound REMOVED. A test that cannot fail is worse than none,
+      // because it reads like cover.
+      //
+      // What was actually seen on the borne — the wordmark clipped at both
+      // edges in portrait — came from a frame laid out at the landscape width
+      // while the screen was already portrait, which a widget test cannot
+      // reproduce. `width: markWidth` on the image is kept as the defensive
+      // bound it is, not as something this suite proves.
+    });
+  }
+
   const Map<String, Size> screens = <String, Size>{
     'Samsung SM-G975F': Size(868, 411),
     'Pixel emulator': Size(997, 448),
