@@ -182,68 +182,81 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            // Landscape, so the split is horizontal: the dish on the left, what
-            // there is to decide on the right. With nothing to decide the dish
-            // takes the whole width rather than leaving a column of cream where
-            // the choices would have been.
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Expanded(
-                  flex: 5,
-                  child: _DishHero(
-                    product: widget.product,
-                    cache: widget.cache,
-                    french: french,
-                    price: MoneyFormatter.formatXaf(_unitPrice),
-                    title: _title(french, theme),
-                  ),
-                ),
-                const SizedBox(width: KioskScale.gapXl),
-                Expanded(
-                  flex: 6,
-                  // ⚠ The one place on the borne where content hides most
-                  // often: a dish with ingredients, allergens AND option
-                  // groups runs past the bottom, and *Accompagnement* — the
-                  // choice that gates the Add button — was cut in half with
-                  // nothing to say so. Seen on the real borne 2026-11-23.
-                  child: KioskScrollable(
+            // ⚠ **The split follows the SHAPE of the screen.** Landscape puts
+            // the dish on the left and what there is to decide on the right.
+            // In portrait that same Row gives the photograph a tall narrow
+            // strip — seen on the borne 2026-11-24, a dish letterboxed into a
+            // column about 400 dp wide and 1 400 tall — so a tall screen
+            // stacks instead: the photograph across the top, where a
+            // photograph belongs, and the detail beneath it.
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints box) {
+                final bool stacked = box.maxHeight > box.maxWidth;
+                final Widget hero = _DishHero(
+                  product: widget.product,
+                  cache: widget.cache,
+                  french: french,
+                  price: MoneyFormatter.formatXaf(_unitPrice),
+                  title: _title(french, theme),
+                );
+                final Widget detail = KioskScrollable(
+                  controller: _detailScroll,
+                  child: ListView(
                     controller: _detailScroll,
-                    child: ListView(
-                      controller: _detailScroll,
-                      children: <Widget>[
-                        KioskDishDetail(
-                          product: widget.product,
-                          french: french,
-                          removed: _removed,
-                          onToggleRemoved: (String id) => setState(() {
-                            if (!_removed.remove(id)) _removed.add(id);
-                          }),
-                        ),
-                        if (hasChoices) ...<Widget>[
-                          const SizedBox(height: KioskScale.gapLg),
-                          if (widget.product.variants.isNotEmpty)
-                            _VariantGroup(
-                              variants: widget.product.variants,
-                              selected: _variant,
-                              french: french,
-                              onPick: (SnapshotVariant v) =>
-                                  setState(() => _variant = v),
-                            ),
-                          for (final SnapshotOptionGroup group
-                              in widget.product.optionGroups)
-                            _OptionGroupBlock(
-                              group: group,
-                              selected: _chosen[group.groupId]!,
-                              french: french,
-                              onToggle: (SnapshotOption o) => _toggle(group, o),
-                            ),
-                        ],
+                    children: <Widget>[
+                      KioskDishDetail(
+                        product: widget.product,
+                        french: french,
+                        removed: _removed,
+                        onToggleRemoved: (String id) => setState(() {
+                          if (!_removed.remove(id)) _removed.add(id);
+                        }),
+                      ),
+                      if (hasChoices) ...<Widget>[
+                        const SizedBox(height: KioskScale.gapLg),
+                        if (widget.product.variants.isNotEmpty)
+                          _VariantGroup(
+                            variants: widget.product.variants,
+                            selected: _variant,
+                            french: french,
+                            onPick: (SnapshotVariant v) =>
+                                setState(() => _variant = v),
+                          ),
+                        for (final SnapshotOptionGroup group
+                            in widget.product.optionGroups)
+                          _OptionGroupBlock(
+                            group: group,
+                            selected: _chosen[group.groupId]!,
+                            french: french,
+                            onToggle: (SnapshotOption o) => _toggle(group, o),
+                          ),
                       ],
-                    ),
+                    ],
                   ),
-                ),
-              ],
+                );
+
+                if (stacked) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      // A third of the height for the photograph: enough to
+                      // be a photograph, not so much that the ingredients and
+                      // the choices start below the fold.
+                      SizedBox(height: box.maxHeight * 0.34, child: hero),
+                      const SizedBox(height: KioskScale.gapLg),
+                      Expanded(child: detail),
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Expanded(flex: 5, child: hero),
+                    const SizedBox(width: KioskScale.gapXl),
+                    Expanded(flex: 6, child: detail),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: KioskScale.gapLg),
@@ -268,10 +281,13 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: widget.onCancel,
-                  child: Text(
-                    l10n.kioskCancel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // ⚠ Scaled, not cut. Seen in portrait on the borne:
+                  // *Annuler* became "Ann…" and *Ajouter 4 500 FCFA* became
+                  // "Ajouter…" — the price, which is the thing the customer
+                  // is agreeing to, simply disappeared off the button.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(l10n.kioskCancel, maxLines: 1),
                   ),
                 ),
               ),
@@ -295,11 +311,13 @@ class _KioskComposerSheetState extends State<KioskComposerSheet> {
                           ),
                         )
                       : null,
-                  child: Text(
-                    '${l10n.kioskAdd}  '
-                    '${MoneyFormatter.formatXaf(_unitPrice * _quantity)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '${l10n.kioskAdd}  '
+                      '${MoneyFormatter.formatXaf(_unitPrice * _quantity)}',
+                      maxLines: 1,
+                    ),
                   ),
                 ),
               ),

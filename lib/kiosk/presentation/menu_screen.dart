@@ -18,10 +18,16 @@ import 'widgets/kiosk_dish_card.dart';
 /// people expect to scroll — so the cards shrink to fit instead.
 /// Above this width the language control spells the language out.
 ///
-/// 1100 dp: the borne itself is 1920, a 10-inch tablet 1280, and the Samsung
-/// in landscape 868 — so the word appears everywhere there is room for it and
-/// the two letters stay on the screens where the header is already tight.
-const double _languageLabelWidth = 1100;
+/// ⚠ This was 1100 and that was simply wrong: the borne is **1097 dp** in
+/// landscape and 1080 in portrait, so the full word never once appeared on
+/// the machine it was written for. Owner, 2026-11-24, after seeing "EN" on
+/// the real screen.
+///
+/// 700 is what the control actually costs with the word in it — about 120 dp,
+/// not the 224 the themed button used to take — so it fits any screen with a
+/// header worth the name, and the two letters stay only on the genuinely
+/// cramped ones.
+const double _languageLabelWidth = 700;
 
 class _DishGridMetrics {
   const _DishGridMetrics({required this.cardWidth, required this.cardHeight});
