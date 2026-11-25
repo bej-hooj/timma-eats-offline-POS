@@ -105,12 +105,13 @@ Branch facts (2026-11-25):
 | S2 | Migrations **written, not applied**: `kitchen_accounts` + roster RPC, `branch_payment_codes` + settings RPC, day-menu RPC | app | ✅ written (not validated — no local Postgres) |
 | S3 | `pos_cloud`: gateway calls + BranchConfigSync + `unchanged` fix; `pos_link`: sealed `roster` frame | app packages | ✅ `974001c` pushed |
 | S4 | Borne: merchant code on ticket screen; day filter + *Menu de la semaine*; 60 s re-pin fix; hub roster | POS | ✅ `6561dfb` (slip printing of the code NOT done) |
-| S5 | Cuisine: login screen, role views, logout, lockout | KDS | ⬜ |
+| S5 | KDS view picker « Cuisine » / « Caisse paiement » (NO login, owner) + dead roster code deleted | KDS, packages, POS | ✅ KDS `82bfb6a`, pkgs `072083e` |
 | S6 | KDS: TV role (display screen, voice, Android TV launcher) | KDS | ⏸ **ON HOLD — owner wants to discuss the TV first (2026-11-25)** |
-| S7 | New logo: app (header + icons), web (header, favicon, PWA), borne, cuisine | all | ⬜ |
-| S8 | Dashboard: *Accès cuisine* CRUD, *Codes marchands* CRUD | web | ⬜ |
+| S7 | New logo: icons+wordmark (earlier), `TimmaMark` = new mark asset (app splash + borne), web favicon/touch icon/landing mark | all | ✅ app `541e88e`, POS `7a45823`, web `9aad51b` (web NOT deployed) |
+| S8 | S8a *Accès KDS* CANCELLED (no login); S8b *Codes marchands* on Settings | web | ✅ S8b `1f35a8b` (NOT deployed; needs migration 120100) |
 | S9 | Pin bump both tablets, builds, device tests, docs/memory/ECOSYSTEM | all | ⬜ |
-| S10 | **NEW (owner)**: À encaisser tickets must never auto-expire (15-min `unpaidTtl` sweep in KDS) + cashier delete icon with confirmation — see CONTINUE file | KDS, pos_core | ⬜ |
+| S10 | À encaisser tickets never auto-expire + cashier delete icon with confirmation → server cancel | KDS, pos_core, server | ✅ KDS `bcc5361`+`b1f445c`, pkgs `8bb93d8`, cron migration APPLIED |
+| S11 | KDS ↔ cloud ↔ customer verification | server | 🟨 notification regression found, fix WRITTEN `20261125190000` (NOT applied); hardware drill not run |
 | — | **Owner approval needed**: apply the 3 migrations, deploy web, publish APKs | — | 🚫 |
 
 ---
@@ -252,3 +253,56 @@ and drink, options, removals, totals, tender) — for accounting.
    letting the KDS drain directly to the cloud (needs a KDS device key).
 4. Prove on hardware: CamPay order → KDS Nouvelles in ≤ 5 s → En préparation
    → customer app shows it + push; offline drill (WAN unplugged) then replay.
+
+## Results — session 2 (2026-11-25, evening)
+
+- **S10 delete icon** — `PosEngine.cancelUnpaid(clientId)`: only an order
+  awaiting counter payment; queued as `transition → cancelled` with reason
+  `unpaid_at_counter` (the server's `fn_transition_order` already allows
+  `pending_payment → cancelled` for a device but REQUIRES a reason — no
+  migration needed). Hub applier routes a KDS cancel through the strict path
+  (a KDS cannot cancel a paid order); cloud sink passes `p_reason`. KDS: trash
+  icon beside *Encaisser* on unpaid counter tickets only, dialog « Supprimer le
+  ticket X ? La commande sera annulée. » Dead expiry summary line removed.
+  Tests: pos_core +3, pos_link +1, pos_cloud +1, KDS +5 (widget: Garder keeps
+  it, Supprimer cancels; paid ticket has no icon).
+- **S11 verification** —
+  1. ⛔ **No order-status notification has been written since 2026-08-14.**
+     `20260815170000_kiosk_cloud_feed` moved `rpc_transition_order` into
+     `fn_transition_order` and dropped the `notifications` insert of
+     `20260810120000`. Live check: last `order_*` row 2026-08-14 19:49 UTC; no
+     trigger on `orders` creates one. Dashboard AND KDS paths are both silent.
+     Fix written from the LIVE definition: `20261125190000_restore_order_status_notifications.sql`
+     — **NOT applied, needs the owner's yes.** It fixes both paths at once;
+     the KDS still sends only `order_id + status` (no PII on the tablet).
+  2. Borne sale → `orders`/`order_items`: ticket number, station, every line
+     with modifiers/removals snapshotted ✅. Settle → `paid`, `status placed`,
+     `tender = cash` ✅ (`rpc_device_mark_counter_paid` hardcodes cash).
+     ⚠ Open owner decision: Mobile Money at the till (merchant code). The KDS
+     records cash only by design (§7.4) and the server requires a `tender_ref`
+     for `mobile_money`; recording MoMo payments needs a « Payé Mobile Money »
+     button + typed transaction ref + migration. Today a MoMo payment would be
+     booked as cash.
+  3. Weak point documented: KDS envelopes go via the borne; borne off = KDS
+     actions queue on the KDS until it returns.
+  4. NOT done: hardware drill (CamPay order → KDS → customer push; WAN unplugged).
+- **S5** — `lib/kds/access/` (`kds_view.dart` lanes per view,
+  `kds_view_controller.dart` meta key `kds.view`, `kds_view_picker.dart`).
+  `KdsRoot`: paired + no view → picker. Board lanes and ALARM filtered by view.
+  « Changer de vue » is icon-only (with the label it overflowed the 844 dp
+  header by 142 px — caught by the header-fit test). Roster/bcrypt code deleted
+  everywhere + `20261125120000` migration file deleted. KDS 126/126.
+- **S7** — `assets/branding/timma_mark.png` (tamm/1 trimmed, white on alpha)
+  in app + POS; `TimmaMark` = tinted `Image.asset`; splash delivery box paints
+  the decoded asset (`TimmaMarkAsset.load/paintInto`). Native splashes carry no
+  logo (checked). Web: `icons/timma-icon-2026-{16,32,180,512}.png`,
+  `images/timma-mark-2026.png`, new `favicon.ico` requested as `?v=2026`;
+  public `_head` gained a 32 px PNG + apple-touch icon. Inline wordmark was
+  already new. Web NOT deployed.
+- **S8b** — Settings › « Codes marchands Mobile Money » (see
+  `timmaeat-webapp/storage/Project_Documentation/Settings/PaymentCodes.md`).
+- Pins: both tablets on `072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d`.
+- Suites: pos_core 154, pos_link 89, pos_cloud 73, pos_link_flutter 21, app
+  876, borne 195, KDS 126, web 1182 (all green after fixes).
+- **Owner approval needed:** apply `20261125120100` (merchant codes) and
+  `20261125190000` (notifications); deploy web; build/publish APKs (S9).
