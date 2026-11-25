@@ -315,3 +315,45 @@ and drink, options, removals, totals, tender) — for accounting.
   executable by anon; rolled-back probe on a real order wrote exactly one
   `order_cancelled` row « Votre commande TM-100136 a été annulée. », order
   untouched after. Remaining owner steps: web deploy, APKs + hardware drill.
+
+## Session 3 (2026-11-25, night) — hardware test + owner decisions
+
+### Owner decisions
+- **Mobile Money at the till stays CASH** — the payment happens outside the
+  system with no backend confirmation; the cashier settles as cash. Final.
+- **Merchant code printed on the slip** — DONE `75f280b`.
+- **TV (S6) — behaviour decided, hardware still to choose:**
+  1. Voice announces BOTH « en préparation » and « prête ».
+  2. A « Prêt » number stays **3 minutes**. While several are ready, the TV
+     **rotates** the announcements: « Commande XXXX est prête » + the ticket
+     code spelled + **the dishes and drinks on it**.
+  3. Voice always on (no chime-only mode).
+  4. **Several TVs** (each one a paired display, same as several KDS).
+
+### Test rig
+- Borne: new AVD `Timma_Borne_Tablet` (2560x1600 @280, landscape, Android 37),
+  borne 1.0.1+2012, device id `borne-emulator-tablet`. 16 iOS simulators deleted.
+- KDS + customer app on the Samsung S10 (adb wifi 192.168.1.245).
+- The emulator is NAT'd: test-only bridge = `adb forward tcp:8801` + a Python
+  relay on the Mac's LAN IP 192.168.1.90:8801 (scratchpad, not in any repo).
+  On a real LAN the borne is reached directly — no bridge.
+
+### Verified on hardware
+- Picker « Cuisine » / « Caisse paiement » ✅; pairing by one tap with matching
+  numbers ✅; new logos (app splash/home, borne, KDS) ✅.
+- Borne sale → server `rpc_place_kiosk_order` 200 in < 1 s → KDS *À encaisser*
+  in < 6 s with trash icon ✅; delete dialog ✅; ticket leaves the KDS ✅.
+
+### ⛔ Found on hardware (fixed in code, one needs the owner)
+1. **No KDS action on a borne ticket has ever reached the server.** The KDS
+   delete was retried every 2 s with HTTP 400: `rpc_device_transition_order`
+   and `rpc_device_mark_counter_paid` demand a `kds` key, the hub relays with
+   its `kiosk` key, and production has no `kds` device. Encaissé / accepter /
+   prêt on borne orders have been stuck in borne outboxes since 2026-08-15.
+   Fix `20261125200000_hub_may_relay_kds_actions.sql` — **WRITTEN, NOT
+   APPLIED (owner yes)**. Queued envelopes drain by themselves once applied.
+2. KDS showed « Ticket 01 » while the borne told the customer « HQJ7 »: the
+   LAN wire dropped `station_code`. Fixed `151adba` (+2 tests).
+3. KDS header said « Cuisine » in the cashier view; gold wordmark invisible on
+   cream; title truncated beside the alarm — all fixed.
+- Pins now `151adba60931769291f04ed7bfd24c6a57862f4e` (both tablets).
