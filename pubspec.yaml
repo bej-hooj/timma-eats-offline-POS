@@ -39,22 +39,22 @@ dependencies:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_core
-      ref: 151adba60931769291f04ed7bfd24c6a57862f4e
+      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
   pos_link:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link
-      ref: 151adba60931769291f04ed7bfd24c6a57862f4e
+      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
   pos_link_flutter:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link_flutter
-      ref: 151adba60931769291f04ed7bfd24c6a57862f4e
+      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
   pos_cloud:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_cloud
-      ref: 151adba60931769291f04ed7bfd24c6a57862f4e
+      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
 
   # The native SQLite pos_core opens. Its own pubspec says this belongs in "the
   # two APPS' pubspecs" — this is one of the two.
@@ -74,6 +74,30 @@ flutter:
 
   assets:
     - assets/branding/
+    - assets/fonts/licenses/
+  fonts:
+    - family: Super Foods
+      fonts:
+        - asset: assets/fonts/SuperFoods-Regular.ttf
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/DMSans-Medium.ttf
+          weight: 500
   generate: true
 
 flutter_launcher_icons:

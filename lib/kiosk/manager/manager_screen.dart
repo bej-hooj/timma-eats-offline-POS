@@ -39,11 +39,45 @@ class _KioskManagerScreenState extends ConsumerState<KioskManagerScreen> {
     });
   }
 
+  Future<void> _replayQuarantined() async {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(l10n.kioskReplayTitle),
+        content: Text(l10n.kioskReplayConfirm),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.kioskCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.kioskReplayAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    final PosStore store = ref.read(kioskEngineProvider).store;
+    final int count = store.requeueQuarantinedEnvelopes();
+    setState(() {});
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.kioskReplayQueued(count))));
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
     final HubState hub = ref.watch(hubProvider);
+    final bool canReplay =
+        !KioskManagerGate.isUnset &&
+        ref.read(kioskEngineProvider).store.outboxCounts().quarantined > 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -135,6 +169,14 @@ class _KioskManagerScreenState extends ConsumerState<KioskManagerScreen> {
                     icon: const Icon(Icons.point_of_sale_outlined),
                     label: Text(l10n.shiftCloseTitle),
                   ),
+                  if (canReplay) ...<Widget>[
+                    const SizedBox(height: KioskScale.gapLg),
+                    OutlinedButton.icon(
+                      onPressed: _replayQuarantined,
+                      icon: const Icon(Icons.sync),
+                      label: Text(l10n.kioskReplayTitle),
+                    ),
+                  ],
                   if (hub.error != null) ...<Widget>[
                     const SizedBox(height: KioskScale.gapLg),
                     Text(

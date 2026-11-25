@@ -20,7 +20,7 @@
   "kioskAttractSubtitle": "Touch the screen to start",
   "kioskAttractStart": "Start",
   "kioskMenuTitle": "Our menu",
-  "kioskDailyMenuTitle": "Daily menu — {date}",
+  "kioskDailyMenuTitle": "Daily menu —\n{date}",
   "@kioskDailyMenuTitle": { "placeholders": { "date": { "type": "String" } } },
   "kioskDrinksTitle": "Drinks available",
   "kioskSoldOut": "Sold out",
@@ -131,6 +131,11 @@
   "kioskManagerPinWrong": "Wrong code.",
   "kioskManagerPinOpen": "Open",
   "kioskManagerPinUnset": "No manager code is configured on this kiosk.",
+  "kioskReplayTitle": "Retry quarantined uploads",
+  "kioskReplayConfirm": "Return quarantined uploads to the sync queue? They will be sent again in their original order.",
+  "kioskReplayAction": "Retry uploads",
+  "kioskReplayQueued": "{count, plural, =0{No uploads to retry.} =1{One upload queued.} other{{count} uploads queued.}}",
+  "@kioskReplayQueued": { "placeholders": { "count": { "type": "int" } } },
   "kioskSlipWithout": "NO {ingredient}",
   "@kioskSlipWithout": {
     "placeholders": {

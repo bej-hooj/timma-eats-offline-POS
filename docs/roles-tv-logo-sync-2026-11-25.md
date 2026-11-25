@@ -416,3 +416,24 @@ and brand fallback as the dish cards. `kiosk_cart.dart` combines matching
 configurations and retains ingredient removals from the composer. The full
 suite passed (201 tests). The 1.0.1+2012 emulator build showed today's four
 dishes, weekly photos and a single Koki row at quantity four.
+
+- Borne typography matches the public site: Super Foods for display and page
+  headings, Poppins for dish names, Inter for body and controls, and DM Sans
+  for compact labels. `kiosk_theme.dart` owns these roles. The font files
+  and notices are bundled for offline use. The emulator screenshots show the
+  daily menu, weekly photos, and merged Koki cart row with the new typography.
+- In the PIN-protected manager screen, **Relancer les envois bloqués** asks for
+  confirmation and then returns quarantined envelopes to the normal cloud
+  drain with a fresh retry budget. It preserves the original identity,
+  payload, and sequence. Tests use an in-memory store and a fake delivery
+  sink. They cover cancellation of the prompt, the cleared retry state,
+  and delivery in order. Historical real envelopes were left for the manager.
+- Borne (202 tests) and KDS (126 tests) use shared POS package commit
+  `b5dac75df560e1689565e236da8bf83eb9c544dd`, which passed 155 core tests.
+  Both tablet builds carry version 1.0.1+2012.
+- Customer app: Samsung Menu tab verified with Ndolé, Poulet DG, Koki and Eru
+  and the Daily menu title. Cart additions merge matching configurations.
+  Server-confirmed payments update the header and the FR/EN splash now reads
+  « TIMMA eats ». Initial menu filter `a144552`, app refinements `b5ffa37`.
+- S6 is on hold at the owner's request. Mobile Money paid at the counter
+  continues to be settled as cash.

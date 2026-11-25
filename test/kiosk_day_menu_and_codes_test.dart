@@ -90,7 +90,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ndolé aux crevettes'), findsWidgets);
     expect(find.text('Poulet DG'), findsNothing);
-    expect(find.text('Menu du jour — mercredi 25 novembre'), findsOneWidget);
+    expect(find.text('Menu du jour —\nmercredi 25 novembre'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('kiosk-week-menu')));
     expect(weekOpened, isTrue);
   });
@@ -125,7 +125,7 @@ void main() {
         locale: const Locale('en'),
       ),
     );
-    expect(find.text('Daily menu — Wednesday, November 25'), findsOneWidget);
+    expect(find.text('Daily menu —\nWednesday, November 25'), findsOneWidget);
   });
 
   testWidgets('the week view lists each dish with its days (fail-open days)', (

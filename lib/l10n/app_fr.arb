@@ -20,7 +20,7 @@
   "kioskAttractSubtitle": "Touchez l'écran pour commencer",
   "kioskAttractStart": "Commencer",
   "kioskMenuTitle": "Notre carte",
-  "kioskDailyMenuTitle": "Menu du jour — {date}",
+  "kioskDailyMenuTitle": "Menu du jour —\n{date}",
   "@kioskDailyMenuTitle": { "placeholders": { "date": { "type": "String" } } },
   "kioskDrinksTitle": "Boissons dispo",
   "kioskSoldOut": "Épuisé",
@@ -131,6 +131,11 @@
   "kioskManagerPinWrong": "Code incorrect.",
   "kioskManagerPinOpen": "Ouvrir",
   "kioskManagerPinUnset": "Aucun code responsable configuré sur cette borne.",
+  "kioskReplayTitle": "Relancer les envois bloqués",
+  "kioskReplayConfirm": "Remettre les envois bloqués dans la file de synchronisation ? Ils seront renvoyés dans leur ordre d’origine.",
+  "kioskReplayAction": "Relancer",
+  "kioskReplayQueued": "{count, plural, =0{Aucun envoi à relancer.} =1{Un envoi remis en file.} other{{count} envois remis en file.}}",
+  "@kioskReplayQueued": { "placeholders": { "count": { "type": "int" } } },
   "kioskSlipWithout": "SANS {ingredient}",
   "@kioskSlipWithout": {
     "placeholders": {

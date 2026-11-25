@@ -33,7 +33,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String kioskDailyMenuTitle(String date) {
-    return 'Menu du jour — $date';
+    return 'Menu du jour —\n$date';
   }
 
   @override
@@ -248,6 +248,28 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get kioskManagerPinUnset =>
       'Aucun code responsable configuré sur cette borne.';
+
+  @override
+  String get kioskReplayTitle => 'Relancer les envois bloqués';
+
+  @override
+  String get kioskReplayConfirm =>
+      'Remettre les envois bloqués dans la file de synchronisation ? Ils seront renvoyés dans leur ordre d’origine.';
+
+  @override
+  String get kioskReplayAction => 'Relancer';
+
+  @override
+  String kioskReplayQueued(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count envois remis en file.',
+      one: 'Un envoi remis en file.',
+      zero: 'Aucun envoi à relancer.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String kioskSlipWithout(String ingredient) {

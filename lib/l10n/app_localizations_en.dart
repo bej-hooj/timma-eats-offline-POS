@@ -33,7 +33,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String kioskDailyMenuTitle(String date) {
-    return 'Daily menu — $date';
+    return 'Daily menu —\n$date';
   }
 
   @override
@@ -245,6 +245,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kioskManagerPinUnset =>
       'No manager code is configured on this kiosk.';
+
+  @override
+  String get kioskReplayTitle => 'Retry quarantined uploads';
+
+  @override
+  String get kioskReplayConfirm =>
+      'Return quarantined uploads to the sync queue? They will be sent again in their original order.';
+
+  @override
+  String get kioskReplayAction => 'Retry uploads';
+
+  @override
+  String kioskReplayQueued(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uploads queued.',
+      one: 'One upload queued.',
+      zero: 'No uploads to retry.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String kioskSlipWithout(String ingredient) {

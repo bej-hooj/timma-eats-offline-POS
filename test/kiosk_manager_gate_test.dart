@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pos_core/pos_core.dart';
 import 'package:timma_kiosk/kiosk/manager/manager_gate.dart';
+import 'package:timma_kiosk/kiosk/manager/manager_screen.dart';
+import 'package:timma_kiosk/kiosk/state/kiosk_session.dart';
 import 'package:timma_kiosk/kiosk/theme/kiosk_theme.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 
@@ -52,6 +56,69 @@ void main() {
       ),
     ),
   );
+
+  testWidgets('quarantined uploads require a manager PIN and confirmation', (
+    WidgetTester tester,
+  ) async {
+    final store = SqlitePosStore.inMemory();
+    addTearDown(store.close);
+    const identity = PosDeviceIdentity(
+      deviceId: 'borne-test',
+      branchId: 'branch-test',
+      role: PosDeviceRole.kiosk,
+      label: 'Borne test',
+    );
+    store.appendEnvelope(
+      OutboxEnvelope(
+        deviceId: identity.deviceId,
+        seq: 1,
+        kind: EnvelopeKind.transition,
+        destination: EnvelopeDestination.cloud,
+        subject: 'test-ticket',
+        payload: const <String, Object?>{},
+        createdAt: DateTime.utc(2026, 11, 25),
+        state: EnvelopeState.quarantined,
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kioskEngineProvider.overrideWithValue(
+            PosEngine(store: store, identity: identity),
+          ),
+        ],
+        child: MaterialApp(
+          locale: const Locale('fr'),
+          theme: KioskTheme.build(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const KioskManagerScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final action = find.text('Relancer les envois bloqués');
+    if (KioskManagerGate.isUnset) {
+      expect(action, findsNothing);
+      return;
+    }
+    expect(action, findsOneWidget);
+    await tester.ensureVisible(action);
+    await tester.tap(action);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Annuler'));
+    await tester.pumpAndSettle();
+    expect(store.outboxCounts().quarantined, 1);
+
+    await tester.tap(action);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Relancer'));
+    await tester.pumpAndSettle();
+    expect(store.outboxCounts().quarantined, 0);
+    expect(store.outboxCounts().pending, 1);
+    expect(find.text('Un envoi remis en file.'), findsOneWidget);
+  });
 
   /// dp, landscape, as measured on the hardware. `wm size` has lied about both;
   /// these come from `dumpsys display` + density.

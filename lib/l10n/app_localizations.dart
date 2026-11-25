@@ -143,7 +143,7 @@ abstract class AppLocalizations {
   /// No description provided for @kioskDailyMenuTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Menu du jour — {date}'**
+  /// **'Menu du jour —\n{date}'**
   String kioskDailyMenuTitle(String date);
 
   /// No description provided for @kioskDrinksTitle.
@@ -529,6 +529,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucun code responsable configuré sur cette borne.'**
   String get kioskManagerPinUnset;
+
+  /// No description provided for @kioskReplayTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer les envois bloqués'**
+  String get kioskReplayTitle;
+
+  /// No description provided for @kioskReplayConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remettre les envois bloqués dans la file de synchronisation ? Ils seront renvoyés dans leur ordre d’origine.'**
+  String get kioskReplayConfirm;
+
+  /// No description provided for @kioskReplayAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer'**
+  String get kioskReplayAction;
+
+  /// No description provided for @kioskReplayQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun envoi à relancer.} =1{Un envoi remis en file.} other{{count} envois remis en file.}}'**
+  String kioskReplayQueued(int count);
 
   /// No description provided for @kioskSlipWithout.
   ///
