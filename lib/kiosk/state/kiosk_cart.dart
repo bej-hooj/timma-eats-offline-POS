@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 
@@ -26,6 +27,17 @@ class KioskCartItem {
 
   /// What the customer asked to leave out, by ingredient id.
   final List<String> removedIngredientIds;
+
+  // Snapshot options and variants carry translated labels, with no spice flag.
+  static final RegExp _pepper = RegExp(
+    r'^(?:(?:avec|with) )?(?:piment(?:é|ée)?|chilli|chili|hot pepper|pepper)$',
+    caseSensitive: false,
+  );
+
+  bool get hasPepper => <String>[
+    if (variant case final SnapshotVariant v) ...<String>[v.nameFr, v.nameEn],
+    for (final SnapshotOption o in options) ...<String>[o.nameFr, o.nameEn],
+  ].any((String name) => _pepper.hasMatch(name.trim()));
 
   /// Minor units, for the customer to read. See the class note.
   ///
@@ -97,7 +109,24 @@ class KioskCartController extends Notifier<KioskCartState> {
     required int quantity,
     SnapshotVariant? variant,
     List<SnapshotOption> options = const <SnapshotOption>[],
+    List<String> removedIngredientIds = const <String>[],
   }) {
+    final List<String> optionIds = options.map((o) => o.optionId).toList()
+      ..sort();
+    final Set<String> removals = removedIngredientIds.toSet();
+    final KioskCartItem? matching = state.items.where((KioskCartItem item) {
+      return item.product.productId == product.productId &&
+          item.variant?.variantId == variant?.variantId &&
+          setEquals(item.removedIngredientIds.toSet(), removals) &&
+          listEquals(
+            item.options.map((o) => o.optionId).toList()..sort(),
+            optionIds,
+          );
+    }).firstOrNull;
+    if (matching != null) {
+      setQuantity(matching.lineId, matching.quantity + quantity);
+      return;
+    }
     state = KioskCartState(
       items: <KioskCartItem>[
         ...state.items,
@@ -106,7 +135,8 @@ class KioskCartController extends Notifier<KioskCartState> {
           product: product,
           quantity: quantity,
           variant: variant,
-          options: options,
+          options: List<SnapshotOption>.unmodifiable(options),
+          removedIngredientIds: List<String>.unmodifiable(removals),
         ),
       ],
     );

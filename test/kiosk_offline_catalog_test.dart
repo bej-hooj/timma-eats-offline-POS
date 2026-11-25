@@ -4,9 +4,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pos_cloud/pos_cloud.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:timma_kiosk/kiosk/catalog/dish_photo_cache.dart';
 import 'package:timma_kiosk/kiosk/presentation/menu_screen.dart';
+import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_week_menu_sheet.dart';
 import 'package:timma_kiosk/kiosk/theme/kiosk_theme.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 
@@ -70,7 +72,7 @@ void main() {
     );
   }
 
-  Widget app(DishPhotoCache? cache) => MaterialApp(
+  Widget app(DishPhotoCache? cache, {Widget? body}) => MaterialApp(
     locale: const Locale('fr'),
     theme: KioskTheme.build(),
     localizationsDelegates: const <LocalizationsDelegate<Object>>[
@@ -81,14 +83,36 @@ void main() {
     ],
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
-      body: KioskMenuScreen(
-        menu: menuWithPhoto(),
-        photoCache: cache,
-        onPick: (SnapshotProduct _) {},
-        onToggleLanguage: () {},
-      ),
+      body:
+          body ??
+          KioskMenuScreen(
+            menu: menuWithPhoto(),
+            photoCache: cache,
+            onPick: (SnapshotProduct _) {},
+            onToggleLanguage: () {},
+          ),
     ),
   );
+
+  testWidgets('the week menu renders a cached photo offline', (tester) async {
+    final cache = DishPhotoCache(directory: dir, allowedHost: host);
+    final file = cache.fileFor(photoUrl)!;
+    file.parent.createSync(recursive: true);
+    file.writeAsBytesSync(png);
+
+    await tester.pumpWidget(
+      app(
+        cache,
+        body: KioskWeekMenuSheet(
+          menu: menuWithPhoto(),
+          dayMenu: KioskDayMenu.fromJson(const {}),
+          today: DateTime(2026, 11, 25),
+          photoCache: cache,
+        ),
+      ),
+    );
+    expect(tester.widget<Image>(find.byType(Image)).image, isA<MemoryImage>());
+  });
 
   testWidgets('a cached dish photo renders with NO network at all', (
     tester,

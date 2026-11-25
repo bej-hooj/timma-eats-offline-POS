@@ -50,18 +50,19 @@ void main() {
     );
   }
 
-  Widget host(Widget child) => MaterialApp(
-    locale: const Locale('fr'),
-    theme: KioskTheme.build(),
-    localizationsDelegates: const <LocalizationsDelegate<Object>>[
-      AppLocalizations.delegate,
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-    ],
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: child),
-  );
+  Widget host(Widget child, {Locale locale = const Locale('fr')}) =>
+      MaterialApp(
+        locale: locale,
+        theme: KioskTheme.build(),
+        localizationsDelegates: const <LocalizationsDelegate<Object>>[
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: child),
+      );
 
   Future<void> borneSize(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1920, 1080);
@@ -81,6 +82,7 @@ void main() {
           onPick: (_) {},
           onToggleLanguage: () {},
           isOnToday: (String id) => id == 'p-ndole',
+          restrictedDate: DateTime(2026, 11, 25),
           onShowWeek: () => weekOpened = true,
         ),
       ),
@@ -88,6 +90,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ndolé aux crevettes'), findsWidgets);
     expect(find.text('Poulet DG'), findsNothing);
+    expect(find.text('Menu du jour — mercredi 25 novembre'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('kiosk-week-menu')));
     expect(weekOpened, isTrue);
   });
@@ -103,7 +106,26 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Poulet DG'), findsWidgets);
+    expect(find.text('Notre carte'), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('kiosk-week-menu')), findsNothing);
+  });
+
+  testWidgets('the restricted heading formats the date in English', (
+    tester,
+  ) async {
+    await borneSize(tester);
+    await tester.pumpWidget(
+      host(
+        KioskMenuScreen(
+          menu: menu(),
+          onPick: (_) {},
+          onToggleLanguage: () {},
+          restrictedDate: DateTime(2026, 11, 25),
+        ),
+        locale: const Locale('en'),
+      ),
+    );
+    expect(find.text('Daily menu — Wednesday, November 25'), findsOneWidget);
   });
 
   testWidgets('the week view lists each dish with its days (fail-open days)', (
@@ -127,6 +149,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Tous les jours'), findsOneWidget);
     expect(find.text('Pas cette semaine'), findsOneWidget);
+    expect(find.byIcon(Icons.restaurant_menu), findsNWidgets(2));
   });
 
   testWidgets('the merchant panel shows each code and the holder', (

@@ -399,3 +399,20 @@ Order left at `ready` (owner can complete it).
 3. App payment screen keeps the title « Payment pending » after confirmation.
 4. App splash still reads « TIMMA Restaurant » under the new mark.
 5. TV (S6): behaviour decided; hardware to choose (recommendation: Android TV box).
+
+### Night continuation
+
+Plan: finish and install the customer Menu filter first. Then update the borne
+heading, weekly photos and cart, with FR/EN coverage and emulator screenshots.
+Use the manager screen to confirm and requeue quarantined envelopes for normal
+ordered delivery. Match the app cart, label its filtered Menu tab, and fix the
+confirmed-payment heading and splash. Owner confirmed « TIMMA eats » for the
+splash and asked to keep S6 on hold.
+
+The borne shows the dated « Menu du jour » heading for a restricted day,
+« Boissons dispo » for the drinks category, and « Notre carte » for the
+unrestricted catalog. The weekly dialog uses the same disk-first thumbnail
+and brand fallback as the dish cards. `kiosk_cart.dart` combines matching
+configurations and retains ingredient removals from the composer. The full
+suite passed (201 tests). The 1.0.1+2012 emulator build showed today's four
+dishes, weekly photos and a single Koki row at quantity four.

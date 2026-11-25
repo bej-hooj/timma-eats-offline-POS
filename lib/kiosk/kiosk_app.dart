@@ -260,6 +260,7 @@ class _KioskShellState extends ConsumerState<KioskShell> {
                     quantity: composition.quantity,
                     variant: composition.variant,
                     options: composition.options,
+                    removedIngredientIds: composition.removedIngredientIds,
                   );
               setState(() => _composing = null);
               controller.toCart();
@@ -422,6 +423,7 @@ class _MenuWithCartBar extends ConsumerWidget {
             onPick: onPick,
             onToggleLanguage: onToggleLanguage,
             photoCache: photos,
+            restrictedDate: allowedToday == null ? null : today,
             isOnToday: allowedToday == null
                 ? null
                 : (String productId) => allowedToday.contains(productId),
@@ -436,6 +438,7 @@ class _MenuWithCartBar extends ConsumerWidget {
               menu: menu,
               dayMenu: dayMenu,
               today: today ?? _doualaToday(),
+              photoCache: photos,
             ),
             // ⚠ The basket is written FIRST and the bubble is decoration over
             // a change that already happened. Tying the line to the end of a

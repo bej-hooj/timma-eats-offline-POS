@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import '../catalog/dish_photo_cache.dart';
@@ -213,10 +214,14 @@ class _CartRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String name = french ? item.product.nameFr : item.product.nameEn;
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
     final List<String> extras = <String>[
       if (item.variant != null)
         french ? item.variant!.nameFr : item.variant!.nameEn,
       for (final o in item.options) french ? o.nameFr : o.nameEn,
+      for (final ingredient in item.product.ingredients)
+        if (item.removedIngredientIds.contains(ingredient.ingredientId))
+          l10n.kioskDishWithout(french ? ingredient.nameFr : ingredient.nameEn),
     ];
 
     // ⚠ **Two rows below 720 dp.** Measured 2026-11-24: at 640 dp the
@@ -251,6 +256,13 @@ class _CartRow extends StatelessWidget {
                   iconSize: 28,
                 ),
                 const SizedBox(width: KioskScale.gapMd),
+                if (item.hasPepper) ...<Widget>[
+                  const Icon(
+                    Icons.local_fire_department_rounded,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(width: KioskScale.gap),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

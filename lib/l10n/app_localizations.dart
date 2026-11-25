@@ -140,6 +140,18 @@ abstract class AppLocalizations {
   /// **'Notre carte'**
   String get kioskMenuTitle;
 
+  /// No description provided for @kioskDailyMenuTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Menu du jour — {date}'**
+  String kioskDailyMenuTitle(String date);
+
+  /// No description provided for @kioskDrinksTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boissons dispo'**
+  String get kioskDrinksTitle;
+
   /// No description provided for @kioskSoldOut.
   ///
   /// In fr, this message translates to:

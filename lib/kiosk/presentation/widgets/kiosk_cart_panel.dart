@@ -252,6 +252,13 @@ class _Line extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: KioskScale.gap),
+              if (item.hasPepper) ...<Widget>[
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: AppColors.error,
+                ),
+                const SizedBox(width: KioskScale.gap),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

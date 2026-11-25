@@ -538,6 +538,7 @@ void _searchAndFilter() {
 
       await tester.tap(find.text('Boissons'));
       await tester.pumpAndSettle();
+      expect(find.text('Boissons dispo'), findsOneWidget);
       expect(find.text('Jus de foléré'), findsOneWidget);
       expect(find.text('Ndolé aux crevettes'), findsNothing);
 

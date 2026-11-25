@@ -32,6 +32,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kioskMenuTitle => 'Our menu';
 
   @override
+  String kioskDailyMenuTitle(String date) {
+    return 'Daily menu — $date';
+  }
+
+  @override
+  String get kioskDrinksTitle => 'Drinks available';
+
+  @override
   String get kioskSoldOut => 'Sold out';
 
   @override

@@ -5,7 +5,9 @@ import 'package:pos_core/pos_core.dart';
 
 import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../catalog/dish_photo_cache.dart';
 import '../../theme/kiosk_scale.dart';
+import 'kiosk_dish_thumb.dart';
 
 /// *Menu de la semaine* (ECOSYSTEM §25.5): every published dish and the days
 /// it is cooked over the next seven days, so a customer who looks for a dish
@@ -19,6 +21,7 @@ class KioskWeekMenuSheet extends StatelessWidget {
     required this.menu,
     required this.dayMenu,
     required this.today,
+    this.photoCache,
   });
 
   /// Number of days shown, today included.
@@ -26,6 +29,7 @@ class KioskWeekMenuSheet extends StatelessWidget {
 
   final MenuSnapshot menu;
   final KioskDayMenu dayMenu;
+  final DishPhotoCache? photoCache;
 
   /// Today in Africa/Douala, as a calendar date (time ignored).
   final DateTime today;
@@ -35,10 +39,15 @@ class KioskWeekMenuSheet extends StatelessWidget {
     required MenuSnapshot menu,
     required KioskDayMenu dayMenu,
     required DateTime today,
+    DishPhotoCache? photoCache,
   }) => showDialog<void>(
     context: context,
-    builder: (_) =>
-        KioskWeekMenuSheet(menu: menu, dayMenu: dayMenu, today: today),
+    builder: (_) => KioskWeekMenuSheet(
+      menu: menu,
+      dayMenu: dayMenu,
+      today: today,
+      photoCache: photoCache,
+    ),
   );
 
   static String isoDate(DateTime day) => DateFormat('yyyy-MM-dd').format(day);
@@ -95,6 +104,14 @@ class KioskWeekMenuSheet extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
+                          KioskDishThumb(
+                            photoUrl: p.photoUrl,
+                            cache: photoCache,
+                            size: KioskScale.minTarget,
+                            radius: KioskScale.gap,
+                            iconSize: 28,
+                          ),
+                          const SizedBox(width: KioskScale.gap),
                           Expanded(
                             flex: 2,
                             child: Text(

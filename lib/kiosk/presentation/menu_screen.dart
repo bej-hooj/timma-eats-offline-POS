@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/design/app_tokens.dart';
@@ -101,6 +102,7 @@ class KioskMenuScreen extends StatefulWidget {
     this.photoCache,
     this.onQuickAdd,
     this.isOnToday,
+    this.restrictedDate,
     this.onShowWeek,
     super.key,
   });
@@ -130,6 +132,9 @@ class KioskMenuScreen extends StatefulWidget {
   /// neither drawn nor counted in its category tile. Null = no restriction.
   final bool Function(String productId)? isOnToday;
 
+  /// Douala calendar date when today’s published menu applies.
+  final DateTime? restrictedDate;
+
   /// Opens *Menu de la semaine*: every dish and the days it is cooked. Null
   /// hides the button (tests only — the app always passes one).
   final VoidCallback? onShowWeek;
@@ -140,6 +145,9 @@ class KioskMenuScreen extends StatefulWidget {
 
 /// Below this width the « Menu de la semaine » button is an icon only.
 const double _weekLabelMinWidth = 1100;
+
+// Seeded catalog identity. The names also cover catalogs created manually.
+const String _drinksCategoryId = '20000000-0000-4000-8000-000000000003';
 
 /// A dish a customer can put in the basket without being asked anything.
 ///
@@ -200,7 +208,8 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
-    final bool french = Localizations.localeOf(context).languageCode == 'fr';
+    final String locale = Localizations.localeOf(context).languageCode;
+    final bool french = locale == 'fr';
     final String query = _fold(_search.text.trim());
     final List<SnapshotProduct> products =
         <SnapshotProduct>[
@@ -230,10 +239,21 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
     // A filter pointing at a category that just left the menu (ops unpublished
     // it while someone was browsing) falls back to "Tout" rather than showing
     // an empty grid.
-    final String? selected =
-        categories.any((SnapshotCategory c) => c.categoryId == _categoryId)
-        ? _categoryId
-        : null;
+    final SnapshotCategory? activeCategory = categories
+        .where((SnapshotCategory c) => c.categoryId == _categoryId)
+        .firstOrNull;
+    final String? selected = activeCategory?.categoryId;
+    final bool drinks =
+        activeCategory != null &&
+        (activeCategory.categoryId == _drinksCategoryId ||
+            _fold(activeCategory.nameFr.trim()) == 'boissons' ||
+            _fold(activeCategory.nameEn.trim()) == 'drinks');
+    final DateTime? date = widget.restrictedDate;
+    final String heading = drinks
+        ? l10n.kioskDrinksTitle
+        : date == null
+        ? l10n.kioskMenuTitle
+        : l10n.kioskDailyMenuTitle(DateFormat.MMMMEEEEd(locale).format(date));
 
     final List<SnapshotProduct> shown = products
         .where(
@@ -279,9 +299,10 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
               // 40 pt heading pushed the row 6 px over — caught by a widget
               // test at the borne's real width, not on the device.
               Flexible(
+                flex: date != null && !drinks ? 2 : 1,
                 child: Text(
-                  l10n.kioskMenuTitle,
-                  maxLines: 1,
+                  heading,
+                  maxLines: date != null && !drinks ? 3 : 1,
                   overflow: TextOverflow.ellipsis,
                   // One step down from `headlineLarge`: the title names the
                   // screen, the dishes are the screen.
