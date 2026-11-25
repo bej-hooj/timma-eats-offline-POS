@@ -111,7 +111,7 @@ Branch facts (2026-11-25):
 | S8 | S8a *Accès KDS* CANCELLED (no login); S8b *Codes marchands* on Settings | web | ✅ S8b `1f35a8b` (NOT deployed; needs migration 120100) |
 | S9 | Pin bump both tablets, builds, device tests, docs/memory/ECOSYSTEM | all | ⬜ |
 | S10 | À encaisser tickets never auto-expire + cashier delete icon with confirmation → server cancel | KDS, pos_core, server | ✅ KDS `bcc5361`+`b1f445c`, pkgs `8bb93d8`, cron migration APPLIED |
-| S11 | KDS ↔ cloud ↔ customer verification | server | 🟨 notification regression found, fix WRITTEN `20261125190000` (NOT applied); hardware drill not run |
+| S11 | KDS ↔ cloud ↔ customer verification | server | 🟨 notification regression FIXED + APPLIED `20261125190000`; hardware drill not run |
 | — | **Owner approval needed**: apply the 3 migrations, deploy web, publish APKs | — | 🚫 |
 
 ---
@@ -306,3 +306,12 @@ and drink, options, removals, totals, tender) — for accounting.
   876, borne 195, KDS 126, web 1182 (all green after fixes).
 - **Owner approval needed:** apply `20261125120100` (merchant codes) and
   `20261125190000` (notifications); deploy web; build/publish APKs (S9).
+
+- **Migrations APPLIED 2026-11-25 (owner yes):** `20261125120100` (merchant
+  codes; trigger now `create or replace` — the Supabase connector silently
+  auto-declines any migration containing DROP, which is why it was "declined"
+  three times with no prompt) and `20261125190000` (notifications). Verified:
+  table RLS on, anon/authenticated no table access, `rpc_kiosk_settings`
+  executable by anon; rolled-back probe on a real order wrote exactly one
+  `order_cancelled` row « Votre commande TM-100136 a été annulée. », order
+  untouched after. Remaining owner steps: web deploy, APKs + hardware drill.
