@@ -705,8 +705,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_cloud"
-      ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
-      resolved-ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
+      ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
+      resolved-ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
@@ -714,8 +714,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_core"
-      ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
-      resolved-ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
+      ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
+      resolved-ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
@@ -723,8 +723,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_link"
-      ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
-      resolved-ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
+      ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
+      resolved-ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
@@ -732,8 +732,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pos_link_flutter"
-      ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
-      resolved-ref: "072083e2f1df09f7e5b59cc9c0c7a43b0ea7ae4d"
+      ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
+      resolved-ref: "151adba60931769291f04ed7bfd24c6a57862f4e"
       url: "https://github.com/bej-hooj/timmaeat-app-flutter.git"
     source: git
     version: "0.1.0"
