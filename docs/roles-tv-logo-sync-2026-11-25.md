@@ -214,3 +214,41 @@ Consequences:
   codes) stays.
 - ECOSYSTEM §25.2 must be rewritten to "role chosen on the device, no
   credentials".
+
+## S11 · Precisions (owner, 2026-11-25, later) — KDS ↔ cloud ↔ customer apps
+**A. Online orders (app/web, already paid via CamPay)** land in the dashboard
+web KDS AND in the « Cuisine » view of the KDS app (*Nouvelles*). When the KDS
+app moves one to *En préparation* and later *Prêt*, the database must be updated
+so the customer app/web *Suivi de commande* updates and the customer gets the
+push (to the right account, right device, right order).
+**B. Borne orders**: when « Caisse paiement » marks a ticket encaissé, the
+server must receive the paid ticket with ALL details (ticket code, every dish
+and drink, options, removals, totals, tender) — for accounting.
+**Both:** offline → kept locally, sent as soon as internet returns.
+
+### Design decision (secure, reuse what exists)
+- The KDS must NOT store customer FCM tokens, account or device data: that is
+  PII on a shared kitchen tablet (CLAUDE.md §11.6). It sends only
+  `order_id + new status`; the SERVER already knows order → user → devices →
+  tokens and targets the right app/account. Same result the owner wants, no
+  leak.
+- Path that already exists (§23): KDS tap → envelope to the hub (borne) →
+  hub outbox (SQLite, survives reboot) → `rpc_device_transition_order` /
+  `rpc_device_mark_counter_paid` every 2 s when online. Borne sales go up as
+  `place_order` envelopes with every line snapshotted.
+
+### Verify first (next session — read before coding)
+1. Does `rpc_device_transition_order` → `fn_transition_order` create the
+   customer notification (in-app `notifications` row + push via
+   `20260810180000_notifications_push_trigger`) exactly as the dashboard web
+   KDS does? Test read-only on a real order id. If not → migration (owner yes).
+2. Does a kiosk sale reach `orders`/`order_items` with ticket number, station,
+   lines, modifiers, removals, tender + `payment_status=paid` after
+   « encaissé »? Check `rpc_place_kiosk_order` + `rpc_device_mark_counter_paid`
+   payloads; the tender (cash / mobile_money) must be sent — today
+   `settleCounter` may not carry it.
+3. ⚠ Weak point: KDS envelopes go to the HUB first. If the borne is off, KDS
+   actions queue on the KDS until the borne is back. Document; consider later
+   letting the KDS drain directly to the cloud (needs a KDS device key).
+4. Prove on hardware: CamPay order → KDS Nouvelles in ≤ 5 s → En préparation
+   → customer app shows it + push; offline drill (WAN unplugged) then replay.
