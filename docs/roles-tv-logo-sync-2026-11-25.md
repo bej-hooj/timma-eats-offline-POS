@@ -357,3 +357,20 @@ and drink, options, removals, totals, tender) — for accounting.
 3. KDS header said « Cuisine » in the cashier view; gold wordmark invisible on
    cream; title truncated beside the alarm — all fixed.
 - Pins now `151adba60931769291f04ed7bfd24c6a57862f4e` (both tablets).
+
+### Session 3 — later
+- ✅ `20261125200000_hub_may_relay_kds_actions` APPLIED (owner yes). Proven on
+  hardware: ticket HQVU sold on the borne, deleted on the KDS → server
+  `cancelled / unpaid_at_counter` within ~2 s. KDS card now reads « Ticket
+  HQVU » = the customer's code.
+- ⚠ Envelopes refused 5× BEFORE the fix were QUARANTINED on the borne (no
+  retry, no replay UI). TM-100152 (test) was closed server-side by hand.
+  Open item: a manager "rejouer" action for quarantined envelopes, or
+  automatic re-try of quarantined envelopes after a server change.
+- Day menu: the borne pulls it fine; the dashboard schedule simply ended
+  2026-09-23, so nothing was restricted and the week button (hidden when no
+  schedule) never showed. Button now ALWAYS shown, labelled on wide screens
+  (`POS` commit « Menu de la semaine is always offered »).
+- Owner asked: 4 dishes for today → `menu_days` 2026-11-25 = Ndolé, Poulet DG,
+  Koki, Eru (published). ⚠ `menu_day_enforced` is on, so the app and the web
+  also offer only these 4 today.
