@@ -437,3 +437,15 @@ dishes, weekly photos and a single Koki row at quantity four.
   « TIMMA eats ». Initial menu filter `a144552`, app refinements `b5ffa37`.
 - S6 is on hold at the owner's request. Mobile Money paid at the counter
   continues to be settled as cash.
+
+### Borne menu card alignment
+
+Reserve the same body space on every grid card for a two-line title, metadata,
+and a price row. Keep the shorter titles close to the metadata and place spare
+space above the price. Verify mixed titles and quick-add states across the
+existing layout test sizes, then check the live mixed grid on the borne AVD.
+
+The grid now uses the same photo and body height for every card in a viewport.
+The image stays full bleed during the network fade. The full suite passed
+(202 tests), and the 1.0.1+2012 release build on the emulator showed all nine
+live cards aligned, including two-line names and Poulet DG without quick-add.

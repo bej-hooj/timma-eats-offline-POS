@@ -71,7 +71,7 @@ void main() {
     );
   }
 
-  Widget app() => MaterialApp(
+  Widget app({TextScaler textScaler = TextScaler.noScaling}) => MaterialApp(
     locale: const Locale('fr'),
     theme: KioskTheme.build(),
     localizationsDelegates: const <LocalizationsDelegate<Object>>[
@@ -81,11 +81,16 @@ void main() {
       GlobalCupertinoLocalizations.delegate,
     ],
     supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+      child: child!,
+    ),
     home: Scaffold(
       body: KioskMenuScreen(
         menu: menu(),
         onPick: (SnapshotProduct _) {},
         onToggleLanguage: () {},
+        onQuickAdd: (_, _) {},
       ),
     ),
   );
@@ -147,12 +152,7 @@ void main() {
       // tablet. Real-name legibility is a device proof, and was taken as one on
       // the Samsung.
       final Text name = tester.widget<Text>(find.text('Ndolé aux crevettes'));
-      // The line count is COMPUTED from the height the card actually got: one
-      // line on a short card, two when they both fit whole. What must never
-      // happen is a line drawn in a box too short to show it — the Samsung
-      // rendered "Poisson braisé" with its second line sliced through the
-      // middle before this became arithmetic instead of a constant.
-      expect(name.maxLines, inInclusiveRange(1, 2));
+      expect(name.maxLines, 2);
       expect(
         name.style?.fontSize,
         Theme.of(
@@ -212,12 +212,7 @@ void main() {
       tester.view.devicePixelRatio = 2.625;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(scale)),
-          child: app(),
-        ),
-      );
+      await tester.pumpWidget(app(textScaler: TextScaler.linear(scale)));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull, reason: 'overflow at $scale');
@@ -227,55 +222,44 @@ void main() {
     });
   }
 
-  testWidgets('the photograph absorbs the card\'s slack, and never the text', (
+  testWidgets('short, wrapped and sold-out cards align photos and prices', (
     tester,
   ) async {
-    // ⚠ This asserted "exactly half" until 2026-11-22, when the halves were
-    // replaced: the text block now HUGS its three lines and the photograph
-    // takes whatever is left. The old split left a band of empty cream between
-    // the dish name and the cooking time on a tall card — reported off the
-    // GM92 as "too big space gap between the title and the cooking time".
-    //
-    // The rule the 50 % constant was protecting is still the rule, and it is
-    // what is asserted here instead of the mechanism: the picture must still
-    // dominate the card, and it must never squeeze the price off it. That is
-    // why this is two expectations and not a ratio.
+    addTearDown(tester.view.reset);
     for (final (Size size, double ratio) in devices.values) {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
 
-      final Rect card = tester.getRect(find.byType(KioskDishCard).first);
-      final Rect photo = tester.getRect(
-        find
-            .descendant(
-              of: find.byType(KioskDishCard).first,
-              matching: find.byType(ColoredBox),
-            )
-            .first,
-      );
-      expect(
-        photo.height,
-        greaterThan(card.height * 0.4),
-        reason:
-            'the photograph sells the dish — it must still dominate: '
-            '${photo.height} of ${card.height} at $size',
-      );
-      // And nothing the text block holds may hang outside the card.
-      final Rect price = tester.getRect(
-        find.descendant(
-          of: find.byType(KioskDishCard).first,
-          matching: find.textContaining('FCFA'),
-        ),
-      );
-      expect(
-        card.bottom - price.bottom,
-        greaterThanOrEqualTo(-0.5),
-        reason: 'the price fell off the card at $size',
-      );
+      final Finder cards = find.byType(KioskDishCard);
+      expect(cards, findsAtLeastNWidgets(2));
+      expect(find.byIcon(Icons.add), findsWidgets);
+      final List<double> photoHeights = [];
+      final List<double> priceOffsets = [];
+      for (int i = 0; i < cards.evaluate().length; i++) {
+        final Finder card = cards.at(i);
+        final Rect bounds = tester.getRect(card);
+        final Rect photo = tester.getRect(
+          find.descendant(of: card, matching: find.byType(KioskDishThumb)),
+        );
+        final Rect price = tester.getRect(
+          find.descendant(of: card, matching: find.textContaining('FCFA')),
+        );
+        expect(photo.width, closeTo(bounds.width, 0.5));
+        expect(photo.height, greaterThanOrEqualTo(KioskScale.gapLg));
+        expect(price.bottom, lessThanOrEqualTo(bounds.bottom));
+        photoHeights.add(photo.height);
+        priceOffsets.add(bounds.bottom - price.center.dy);
+      }
+      for (final double height in photoHeights) {
+        expect(height, closeTo(photoHeights.first, 0.5), reason: '$size');
+      }
+      for (final double offset in priceOffsets) {
+        expect(offset, closeTo(priceOffsets.first, 0.5), reason: '$size');
+      }
+      expect(tester.takeException(), isNull);
     }
-    addTearDown(tester.view.reset);
   });
 
   testWidgets('a dish shows its photograph in the cart and the composer', (

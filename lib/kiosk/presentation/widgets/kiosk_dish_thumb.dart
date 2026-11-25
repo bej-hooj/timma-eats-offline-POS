@@ -93,6 +93,11 @@ class KioskDishThumb extends StatelessWidget {
             }
             return AnimatedSwitcher(
               duration: const Duration(milliseconds: 240),
+              layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
+                fit: StackFit.passthrough,
+                alignment: Alignment.center,
+                children: <Widget>[...previous, ?current],
+              ),
               child: frame == null
                   ? KioskShimmer(
                       key: const ValueKey<String>('shimmer'),

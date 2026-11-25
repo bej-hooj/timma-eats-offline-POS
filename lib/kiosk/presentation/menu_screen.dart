@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pos_core/pos_core.dart';
@@ -46,7 +48,11 @@ class _DishGridMetrics {
   /// [_idealCardWidth] is a TARGET, not a minimum: the columns are whole, so
   /// the real width lands near it and the cards still fill the row edge to
   /// edge at any screen size.
-  factory _DishGridMetrics.fit(double availableWidth, double availableHeight) {
+  factory _DishGridMetrics.fit(
+    double availableWidth,
+    double availableHeight,
+    double bodyHeight,
+  ) {
     const double idealCardWidth = 200;
     const double minCardWidth = 168;
     const double maxCardWidth = KioskScale.dishCardWidth;
@@ -70,16 +76,20 @@ class _DishGridMetrics {
       cardWidth = maxCardWidth;
     }
 
-    double cardHeight = cardWidth / KioskScale.dishCardAspectRatio;
-
-    // And never taller than the viewport can show in one go: a card that does
-    // not fit on screen is a card a standing customer has to scroll to read.
-    final double usableHeight = availableHeight.isFinite && availableHeight > 0
+    // Aim for a photo that takes about 40% of the tile. On short screens,
+    // give up photo height first so a complete card can fit in the viewport.
+    final double preferredHeight = math.max(
+      cardWidth / KioskScale.dishCardAspectRatio,
+      bodyHeight / 0.6,
+    );
+    final double viewportHeight =
+        availableHeight.isFinite && availableHeight > 0
         ? availableHeight
-        : cardHeight;
-    if (cardHeight > usableHeight) {
-      cardHeight = usableHeight;
-    }
+        : preferredHeight;
+    final double cardHeight = math.max(
+      bodyHeight + KioskScale.gapLg,
+      math.min(preferredHeight, viewportHeight),
+    );
     return _DishGridMetrics(cardWidth: cardWidth, cardHeight: cardHeight);
   }
 
@@ -548,6 +558,7 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                 final _DishGridMetrics metrics = _DishGridMetrics.fit(
                   constraints.maxWidth,
                   constraints.maxHeight,
+                  KioskDishCard.bodyHeight(context),
                 );
                 return KioskScrollable(
                   controller: _gridScroll,

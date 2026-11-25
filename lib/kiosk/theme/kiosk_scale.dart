@@ -66,20 +66,8 @@ abstract final class KioskScale {
   /// at `labelLarge` it covered a third of the picture.
   static const double badgeSize = 13;
 
-  /// The customer app's dish-card proportion, 180 × 208, kept exactly.
-  ///
-  /// The kiosk card is wider — a standing customer reads it from a metre away,
-  /// not from their hand — but the SHAPE is the app's, so the same dish reads
-  /// as the same product on both surfaces (owner, 2026-08-17: *"the POS kiosk
-  /// should follow the current design of the app menu view"*).
-  ///
-  /// ⚠ The photo is **half the card by construction** in `KioskDishCard`, as
-  /// two equal `Expanded`s — not a fixed image height. That rule comes from the
-  /// app card, where every attempt to guess a photo height was wrong: a fixed
-  /// 120 overflowed one text variant by 7 px and letting the photo take the
-  /// slack measured 54 % of the card. There is deliberately no
-  /// `dishCardImageHeight` constant any more, because having one is what let
-  /// the two sides drift.
+  /// Base grid tile proportion. The grid grows its tiles when the shared
+  /// card body needs room for larger text or a two-line name.
   static const double dishCardAspectRatio = 180 / 208;
   static const double dishCardHeight = dishCardWidth / dishCardAspectRatio;
 }

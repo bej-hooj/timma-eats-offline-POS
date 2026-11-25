@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'package:timma_kiosk/design/app_tokens.dart';
@@ -8,21 +10,9 @@ import 'kiosk_dish_thumb.dart';
 
 /// One dish, photograph first — **the customer app's card, at kiosk scale.**
 ///
-/// The grammar is copied deliberately from
-/// `lib/features/catalog/presentation/widgets/product_card.dart` in the app, so
-/// a dish looks like the same product whether the customer met it on their phone
-/// or on the kiosk (owner, 2026-08-17). Three rules travel with it, and each one
-/// is there because the app learned it the hard way:
-///
-/// * **The photo is exactly half the card**, as two equal `Expanded`s rather
-///   than a number anyone picked. A fixed photo height drifted the app's two
-///   copies apart and overflowed one text variant by 7 px.
-/// * **The photo is full bleed and carries no radius of its own.** The `Card`'s
-///   `Clip.antiAlias` rounds its top corners to exactly the card's, which a
-///   separately rounded, inset image can only approximate.
-/// * **Title, then a spacer, then the price row.** The price sits on the
-///   card's bottom edge on every card, so a row of dishes has one price line
-///   rather than a ragged one.
+/// The body reserves space for the same rows on every card. The remainder
+/// belongs to the full-bleed photo, so titles and quick-add controls cannot
+/// move the photo edge or price row out of alignment.
 ///
 /// A null [onTap] is the sold-out state: the card renders greyed with its badge
 /// and **cannot be tapped**, so a sold-out dish has no path to the composer at
@@ -86,6 +76,44 @@ class KioskDishCard extends StatelessWidget {
   /// Identifies the "+" so the add-to-cart bubble can leave from it.
   final GlobalKey? quickAddKey;
 
+  static const double _titleGap = KioskScale.gap / 2;
+  static const double _priceGap = KioskScale.gap;
+
+  /// Allows two title lines and a price row with a quick-add button.
+  /// Measure at the kiosk's current text scale so the grid can size its tiles.
+  static double bodyHeight(BuildContext context) {
+    final TextTheme text = Theme.of(context).textTheme;
+    final TextStyle ambient = DefaultTextStyle.of(context).style;
+    double lineHeight(TextStyle? style) {
+      final TextPainter painter = TextPainter(
+        text: TextSpan(text: 'Éru', style: ambient.merge(style)),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+      final double height = painter.height;
+      painter.dispose();
+      return height;
+    }
+
+    return 2 * lineHeight(text.titleMedium) +
+        math.max(
+          _KioskDishMetaRow._glyph,
+          lineHeight(text.bodySmall?.copyWith(fontSize: KioskScale.labelSize)),
+        ) +
+        math.max(
+          _QuickAddButton._size,
+          lineHeight(
+            text.bodyLarge?.copyWith(
+              fontSize: KioskScale.cardPriceSize,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ) +
+        2 * KioskScale.gap +
+        _titleGap +
+        _priceGap;
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
@@ -126,13 +154,7 @@ class KioskDishCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  // ⚠ 5:4, not 1:1. An even split left a tall band of empty
-                  // cream under the name on every card — visible on the GM92
-                  // and the first thing the owner pointed at. The photograph
-                  // is what sells a dish, so it takes the larger share and the
-                  // text block is only as tall as its three lines need.
                   Expanded(
-                    flex: 5,
                     child: _Photo(
                       url: photoUrl,
                       cache: photoCache,
@@ -140,77 +162,65 @@ class KioskDishCard extends StatelessWidget {
                       soldOutLabel: soldOutLabel,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      KioskScale.gapMd,
-                      KioskScale.gap,
-                      KioskScale.gap,
-                      KioskScale.gap,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        // ⚠ The text block HUGS its content and the
-                        // photograph takes every remaining pixel.
-                        //
-                        // It used to be the other way round: the name sat in
-                        // an `Expanded`, so on a tall card a band of empty
-                        // cream opened up between the dish name and the
-                        // cooking time — "too big space gap on card between
-                        // the title and the cooking time", reported off the
-                        // GM92. Elastic space inside a text block always
-                        // lands somewhere the type does not want it. Give the
-                        // slack to the picture, which is what sells the dish,
-                        // and the three lines stay together whatever the card
-                        // height turns out to be.
-                        _DishName(name: name, style: style),
-                        const SizedBox(height: KioskScale.gap / 2),
-                        _KioskDishMetaRow(
-                          prepMin: prepMin,
-                          prepMax: prepMax,
-                          spiceLevel: spiceLevel,
-                          origin: origin,
-                        ),
-                        const SizedBox(height: KioskScale.gap),
-                        Row(
-                          children: <Widget>[
-                            Expanded(
-                              // ⚠⚠ **The price must never be cut.** Seen on
-                              // the borne 2026-11-23: narrow cards rendered
-                              // "3 500 FC…" — an ellipsis in the middle of the
-                              // one number the customer is deciding on, and
-                              // one that could just as easily have clipped a
-                              // digit. An ellipsis is acceptable on a dish
-                              // NAME, where the card carries a photograph and
-                              // the detail page carries the rest; it is not
-                              // acceptable on money.
-                              //
-                              // `scaleDown` only ever shrinks, so a card with
-                              // room keeps the full type size and a row of
-                              // dishes still has one price line across it.
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  price,
-                                  maxLines: 1,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontSize: KioskScale.cardPriceSize,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                  SizedBox(
+                    height: bodyHeight(context),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        KioskScale.gapMd,
+                        KioskScale.gap,
+                        KioskScale.gap,
+                        KioskScale.gap,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: style,
+                          ),
+                          const SizedBox(height: _titleGap),
+                          _KioskDishMetaRow(
+                            prepMin: prepMin,
+                            prepMax: prepMax,
+                            spiceLevel: spiceLevel,
+                            origin: origin,
+                          ),
+                          const Spacer(),
+                          const SizedBox(height: _priceGap),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minHeight: _QuickAddButton._size,
+                            ),
+                            child: Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      price,
+                                      maxLines: 1,
+                                      style: theme.textTheme.bodyLarge
+                                          ?.copyWith(
+                                            fontSize: KioskScale.cardPriceSize,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primary,
+                                          ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                if (onQuickAdd != null)
+                                  _QuickAddButton(
+                                    key: quickAddKey,
+                                    onPressed: onQuickAdd!,
+                                  ),
+                              ],
                             ),
-                            if (onQuickAdd != null)
-                              _QuickAddButton(
-                                key: quickAddKey,
-                                onPressed: onQuickAdd!,
-                              ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -284,36 +294,6 @@ class _Photo extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// The dish's name, at most two lines.
-///
-/// **The guarantee moved, it was not dropped.** This used to measure its own
-/// box and compute how many lines fitted, because the name sat in an
-/// `Expanded` inside a fixed-height card: `maxLines: 2` bounds how many lines
-/// are LAID OUT, not whether the last one is painted in a box too short to
-/// show it, and the Samsung drew "Poisson braisé" sliced through the middle.
-///
-/// Since 2026-11-22 the text block hugs its content and the PHOTOGRAPH absorbs
-/// the card's slack, so the name is always given exactly the height its lines
-/// need and a sliced line cannot happen. Measuring here is not merely
-/// unnecessary now — it is impossible, because a hugging column offers
-/// unbounded height and the old arithmetic produced `Infinity.floor()`.
-class _DishName extends StatelessWidget {
-  const _DishName({required this.name, required this.style});
-
-  final String name;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      name,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: style,
     );
   }
 }
@@ -456,12 +436,12 @@ class _KioskDishMetaRow extends StatelessWidget {
 
 /// The "+" on a dish card: one tap, straight into the basket.
 ///
-/// ⚠ It is a sibling of the card's `InkWell`, not a child of it, so a tap here
-/// does NOT also open the composer behind it. Sized at [KioskScale.minTarget]
-/// to keep the standing-customer touch rule even though it draws smaller — the
-/// ink circle is 48, the hit box is 72.
+/// Its own tap handler adds the item without opening the composer. The card
+/// reserves this control's height even when the control is absent.
 class _QuickAddButton extends StatelessWidget {
   const _QuickAddButton({required this.onPressed, super.key});
+
+  static const double _size = 52;
 
   final VoidCallback onPressed;
 
@@ -472,8 +452,8 @@ class _QuickAddButton extends StatelessWidget {
       button: true,
       label: l10n.kioskAdd,
       child: SizedBox(
-        width: 52,
-        height: 52,
+        width: _size,
+        height: _size,
         child: Material(
           color: AppColors.primary,
           shape: const CircleBorder(),
