@@ -38,6 +38,13 @@ Test commands (all must be green before any commit):
 
 ## S5 · KDS access roles (repo `timma-eats-offline-KDS`)
 
+> ⚠⚠ **SUPERSEDED (owner, 2026-11-25): NO login/password.** The KDS opens on a
+> role picker — « Cuisine » or « Caisse paiement » — remembered on the device,
+> with a « Changer de vue » button. Keep only steps 3 (`kds_access_roles.dart`),
+> 5–7 (gate/restrict/l10n, with the picker instead of the login screen) and the
+> lane tests. Skip bcrypt, roster store, verifier, lockout. Then remove the dead
+> roster code — see the decision note at the end of the plan doc. S8a is cancelled.
+
 ### What the owner asked
 "The KDS should have access id+pass that opens different views. Kitchen
 access = pipeline from *Nouvelles* to *Prêt*. Encaisser access = only the

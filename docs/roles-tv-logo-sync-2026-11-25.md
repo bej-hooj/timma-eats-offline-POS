@@ -110,6 +110,7 @@ Branch facts (2026-11-25):
 | S7 | New logo: app (header + icons), web (header, favicon, PWA), borne, cuisine | all | ⬜ |
 | S8 | Dashboard: *Accès cuisine* CRUD, *Codes marchands* CRUD | web | ⬜ |
 | S9 | Pin bump both tablets, builds, device tests, docs/memory/ECOSYSTEM | all | ⬜ |
+| S10 | **NEW (owner)**: À encaisser tickets must never auto-expire (15-min `unpaidTtl` sweep in KDS) + cashier delete icon with confirmation — see CONTINUE file | KDS, pos_core | ⬜ |
 | — | **Owner approval needed**: apply the 3 migrations, deploy web, publish APKs | — | 🚫 |
 
 ---
@@ -194,3 +195,22 @@ in UI strings and docs from now on.
   `rosterSource` + `publishRoster()`. Borne 195/195 green, analyze clean.
   Not on hardware yet (migrations not applied → the three RPCs fail and the
   borne simply shows no codes/no restriction, by design).
+
+## ⚠ DECISION CHANGE (owner, 2026-11-25) — NO login/password on the KDS
+Owner: "no need for id and password. We open the KDS and just choose
+« Cuisine » or « Caisse paiement »."
+So S5 becomes: a role picker on the KDS (two big buttons, choice remembered on
+the device in its store meta, a « Changer de vue » button to switch back).
+Cuisine = Nouvelles → En préparation → Prêtes (+ Programmées/En livraison when
+non-empty); Caisse paiement = À encaisser only. Use `KdsAccess.lanesFor` from
+the guide; ignore every bcrypt/login/lockout step.
+Consequences:
+- Do NOT apply `20261125120000_kitchen_accounts_roster.sql` (it was declined
+  anyway) — delete that migration file, and remove the now-dead roster code
+  (pos_core `kitchen_roster.dart`, pos_link `roster_seal.dart` + `roster`
+  frame + `rosterSource`/`publishRoster`, pos_cloud roster pull, borne hub
+  wiring) in one commit, tests green, re-pin both tablets (CLAUDE.md §0.10:
+  delete dead code). S8a (dashboard Accès KDS) is CANCELLED; S8b (merchant
+  codes) stays.
+- ECOSYSTEM §25.2 must be rewritten to "role chosen on the device, no
+  credentials".
