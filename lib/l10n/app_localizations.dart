@@ -665,7 +665,7 @@ abstract class AppLocalizations {
   /// No description provided for @kioskPayMobileTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Pas d\'espèces ? Payez par Mobile Money'**
+  /// **'Pas d\'espèces ? Payez par Mobile Money ou Orange Money'**
   String get kioskPayMobileTitle;
 
   /// No description provided for @kioskPayMobileHint.

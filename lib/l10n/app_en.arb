@@ -209,7 +209,7 @@
   "kioskWeekMenuNotScheduled": "Not this week",
   "kioskWeekMenuToday": "Today",
   "kioskWeekMenuClose": "Close",
-  "kioskPayMobileTitle": "No cash? Pay with Mobile Money",
+  "kioskPayMobileTitle": "No cash? Pay with Mobile Money or Orange Money",
   "kioskPayMobileHint": "Dial the merchant code, then show the confirmation at the counter with your ticket.",
   "kioskPayMobileProviderMtn": "MTN Mobile Money",
   "kioskPayMobileProviderOrange": "Orange Money",

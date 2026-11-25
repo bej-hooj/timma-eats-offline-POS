@@ -337,7 +337,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get kioskWeekMenuClose => 'Fermer';
 
   @override
-  String get kioskPayMobileTitle => 'Pas d\'espèces ? Payez par Mobile Money';
+  String get kioskPayMobileTitle =>
+      'Pas d\'espèces ? Payez par Mobile Money ou Orange Money';
 
   @override
   String get kioskPayMobileHint =>

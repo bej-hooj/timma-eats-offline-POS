@@ -209,7 +209,7 @@
   "kioskWeekMenuNotScheduled": "Pas cette semaine",
   "kioskWeekMenuToday": "Aujourd'hui",
   "kioskWeekMenuClose": "Fermer",
-  "kioskPayMobileTitle": "Pas d'espèces ? Payez par Mobile Money",
+  "kioskPayMobileTitle": "Pas d'espèces ? Payez par Mobile Money ou Orange Money",
   "kioskPayMobileHint": "Composez le code marchand, puis montrez la confirmation à la caisse avec votre ticket.",
   "kioskPayMobileProviderMtn": "MTN Mobile Money",
   "kioskPayMobileProviderOrange": "Orange Money",
