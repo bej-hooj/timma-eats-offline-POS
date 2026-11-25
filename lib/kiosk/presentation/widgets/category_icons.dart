@@ -19,25 +19,26 @@ import 'package:flutter/material.dart';
 /// NAME, accent- and case-insensitively, and anything unrecognised falls back
 /// to a plate rather than to nothing. When an operator can choose the icon,
 /// this map becomes the default rather than the answer.
-IconData categoryIcon(String name) {
+Widget categoryIcon(String name, {required double size, required Color color}) {
   final String n = _fold(name);
-  for (final MapEntry<List<String>, IconData> entry in _byKeyword.entries) {
-    for (final String keyword in entry.key) {
-      if (n.contains(keyword)) {
-        return entry.value;
-      }
+  for (final MapEntry<List<String>, IconData?> entry in _byKeyword.entries) {
+    if (entry.key.any(n.contains)) {
+      final IconData? glyph = entry.value;
+      return glyph == null
+          ? KioskBottleIcon(size: size, color: color)
+          : Icon(glyph, size: size, color: color);
     }
   }
-  return Icons.dinner_dining;
+  return Icon(Icons.dinner_dining, size: size, color: color);
 }
 
 /// Order matters: the first keyword that appears in the name wins, so the more
 /// specific families are listed before the general ones. "Jus de foléré" must
 /// reach the drinks entry before anything else claims it.
-const Map<List<String>, IconData> _byKeyword = <List<String>, IconData>{
+// A null glyph uses the custom bottle silhouette.
+const Map<List<String>, IconData?> _byKeyword = <List<String>, IconData?>{
   <String>['tout', 'all', 'menu complet']: Icons.apps,
-  <String>['boisson', 'drink', 'jus', 'jus de', 'eau', 'soda', 'bissap']:
-      Icons.local_drink,
+  <String>['boisson', 'drink', 'jus', 'eau', 'soda', 'bissap']: null,
   <String>['grillade', 'braise', 'braises', 'brochette', 'barbecue', 'soya']:
       Icons.outdoor_grill,
   <String>['soupe', 'soup', 'bouillon', 'pepper']: Icons.soup_kitchen,
@@ -51,6 +52,59 @@ const Map<List<String>, IconData> _byKeyword = <List<String>, IconData>{
   <String>['volaille', 'poulet', 'chicken']: Icons.kebab_dining,
   <String>['plat', 'dish', 'repas', 'resistance', 'main']: Icons.dinner_dining,
 };
+
+/// A single capped beverage bottle for the drinks category.
+class KioskBottleIcon extends StatelessWidget {
+  const KioskBottleIcon({required this.size, required this.color, super.key});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(size), painter: _BottlePainter(color));
+}
+
+class _BottlePainter extends CustomPainter {
+  const _BottlePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 24, size.height / 24);
+    final Paint ink = Paint()..color = color;
+    final Path bottle = Path()
+      ..fillType = PathFillType.evenOdd
+      ..moveTo(10, 6)
+      ..lineTo(14, 6)
+      ..lineTo(14, 8)
+      ..quadraticBezierTo(14, 9, 16, 10)
+      ..quadraticBezierTo(17, 11, 17, 12)
+      ..lineTo(17, 20)
+      ..quadraticBezierTo(17, 22, 15, 22)
+      ..lineTo(9, 22)
+      ..quadraticBezierTo(7, 22, 7, 20)
+      ..lineTo(7, 12)
+      ..quadraticBezierTo(7, 11, 8, 10)
+      ..quadraticBezierTo(10, 9, 10, 8)
+      ..close()
+      ..addRect(const Rect.fromLTRB(9, 14, 15, 17));
+    canvas.drawPath(bottle, ink);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTRB(9, 2, 15, 5),
+        const Radius.circular(1),
+      ),
+      ink,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_BottlePainter oldDelegate) => color != oldDelegate.color;
+}
 
 /// Lower-cases and strips the accents a French menu is full of, so "Entrées",
 /// "ENTREES" and "entrees" are one word. Deliberately the same shape as the

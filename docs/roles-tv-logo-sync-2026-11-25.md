@@ -449,3 +449,6 @@ The grid now uses the same photo and body height for every card in a viewport.
 The image stays full bleed during the network fade. The full suite passed
 (202 tests), and the 1.0.1+2012 release build on the emulator showed all nine
 live cards aligned, including two-line names and Poulet DG without quick-add.
+
+The Boissons pill now uses a single capped bottle silhouette. The updated
+1.0.1+2012 APK showed it on the emulator. All 202 tests passed.

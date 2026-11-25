@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/kiosk/presentation/menu_screen.dart';
+import 'package:timma_kiosk/kiosk/presentation/widgets/category_icons.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_category_pill.dart';
 import 'package:timma_kiosk/kiosk/presentation/composer_sheet.dart';
 import 'package:timma_kiosk/kiosk/presentation/widgets/kiosk_dish_card.dart';
@@ -519,6 +520,14 @@ void _searchAndFilter() {
     ) async {
       await pump(tester, menuWithCategories());
       expect(find.text('Tout'), findsOneWidget);
+      final Finder drinksPill = find.ancestor(
+        of: find.text('Boissons'),
+        matching: find.byType(KioskCategoryPill),
+      );
+      expect(
+        find.descendant(of: drinksPill, matching: find.byType(KioskBottleIcon)),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Boissons'));
       await tester.pumpAndSettle();

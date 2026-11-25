@@ -90,8 +90,8 @@ class KioskCategoryPill extends StatelessWidget {
                   // in one line and gives it back. The same layout now serves
                   // the short-screen case, so there is one thing to get right
                   // instead of two.
-                  Icon(
-                    categoryIcon(label),
+                  categoryIcon(
+                    label,
                     size: compact ? 20 : 24,
                     color: foreground,
                   ),
