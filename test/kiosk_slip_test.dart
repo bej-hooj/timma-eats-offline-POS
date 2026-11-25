@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pos_cloud/pos_cloud.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
 import 'package:timma_kiosk/kiosk/printing/escpos.dart';
@@ -163,6 +164,55 @@ void main() {
       code: CollectionCode.forOrder(order(), secret: secret),
       french: true,
     );
+
+    test(
+      '§25.4 — the merchant codes are printed, one per line, code kept whole',
+      () {
+        const SlipLabels withMoMo = SlipLabels(
+          header: 'TIMMA',
+          payAtCounter: 'Payez à la caisse',
+          total: 'Total',
+          takeAway: 'À emporter',
+          without: 'SANS {ingredient}',
+          groupLabel: '{group} : {answer}',
+          groupNone: 'AUCUN',
+          mobileMoneyTitle: 'Payer par :',
+          providerMtn: 'MTN Mobile Money',
+          providerOrange: 'Orange Money',
+          holderPattern: 'Au nom de : {name}',
+        );
+        final String slip = latin1.decode(
+          Slip.build(
+            order: order(),
+            lines: lines(),
+            labels: withMoMo,
+            code: CollectionCode.forOrder(order(), secret: secret),
+            french: true,
+            paymentCodes: const <KioskPaymentCode>[
+              KioskPaymentCode(
+                provider: KioskPaymentProvider.mtnMomo,
+                code: '123456',
+                holderName: 'TIMMA EATS',
+              ),
+              KioskPaymentCode(
+                provider: KioskPaymentProvider.orangeMoney,
+                code: '987654',
+              ),
+            ],
+          ),
+          allowInvalid: true,
+        );
+        expect(slip, contains('Payer par :'));
+        expect(slip, contains(_row32('MTN Mobile Money', '123456')));
+        expect(slip, contains(_row32('Orange Money', '987654')));
+        expect(slip, contains('Au nom de : TIMMA EATS'));
+      },
+    );
+
+    test('§25.4 — no merchant code defined, no section on the slip', () {
+      final String slip = latin1.decode(build(), allowInvalid: true);
+      expect(slip, isNot(contains('Mobile Money')));
+    });
 
     test('⚠⚠ Q69 — a group offered and DECLINED is printed on the slip', () {
       /*
@@ -595,3 +645,7 @@ class _FakePrinter implements PrinterTransport {
   @override
   Future<int?> status() async => statusByte;
 }
+
+/// A 32-column row: left label, right value, padded between.
+String _row32(String left, String right) =>
+    '$left${' ' * (32 - left.length - right.length)}$right';

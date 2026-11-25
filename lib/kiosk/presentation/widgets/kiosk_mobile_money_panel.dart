@@ -11,7 +11,9 @@ import '../../theme/kiosk_scale.dart';
 /// would send a customer looking for a code that does not exist.
 ///
 /// The customer pays from their own phone and shows the confirmation at the
-/// counter; the cashier then settles the ticket with tender *Mobile Money*.
+/// counter; the cashier checks it and settles the ticket as **cash** — the
+/// payment happens outside the system, so nothing here or on the server can
+/// verify it (owner decision, 2026-11-25).
 /// Nothing here touches money: it is information, read from the dashboard.
 class KioskMobileMoneyPanel extends StatelessWidget {
   const KioskMobileMoneyPanel({

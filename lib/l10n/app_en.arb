@@ -214,5 +214,6 @@
   "kioskPayMobileProviderMtn": "MTN Mobile Money",
   "kioskPayMobileProviderOrange": "Orange Money",
   "kioskPayMobileCode": "Merchant code: {code}",
-  "kioskPayMobileHolder": "Account name: {name}"
+  "kioskPayMobileHolder": "Account name: {name}",
+  "kioskSlipMobileTitle": "No cash? Pay by phone:"
 }

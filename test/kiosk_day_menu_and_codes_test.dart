@@ -69,8 +69,9 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  testWidgets('a dish not cooked today is not drawn; the week button shows',
-      (WidgetTester tester) async {
+  testWidgets('a dish not cooked today is not drawn; the week button shows', (
+    WidgetTester tester,
+  ) async {
     await borneSize(tester);
     bool weekOpened = false;
     await tester.pumpWidget(
@@ -91,16 +92,13 @@ void main() {
     expect(weekOpened, isTrue);
   });
 
-  testWidgets('no schedule: every dish, no week button',
-      (WidgetTester tester) async {
+  testWidgets('no schedule: every dish, no week button', (
+    WidgetTester tester,
+  ) async {
     await borneSize(tester);
     await tester.pumpWidget(
       host(
-        KioskMenuScreen(
-          menu: menu(),
-          onPick: (_) {},
-          onToggleLanguage: () {},
-        ),
+        KioskMenuScreen(menu: menu(), onPick: (_) {}, onToggleLanguage: () {}),
       ),
     );
     await tester.pumpAndSettle();
@@ -108,8 +106,9 @@ void main() {
     expect(find.byKey(const ValueKey<String>('kiosk-week-menu')), findsNothing);
   });
 
-  testWidgets('the week view lists each dish with its days (fail-open days)',
-      (WidgetTester tester) async {
+  testWidgets('the week view lists each dish with its days (fail-open days)', (
+    WidgetTester tester,
+  ) async {
     await borneSize(tester);
     final DateTime today = DateTime(2026, 11, 25);
     final KioskDayMenu days = KioskDayMenu.fromJson(<String, Object?>{
@@ -130,8 +129,9 @@ void main() {
     expect(find.text('Pas cette semaine'), findsOneWidget);
   });
 
-  testWidgets('the merchant panel shows each code and the holder',
-      (WidgetTester tester) async {
+  testWidgets('the merchant panel shows each code and the holder', (
+    WidgetTester tester,
+  ) async {
     await borneSize(tester);
     await tester.pumpWidget(
       host(

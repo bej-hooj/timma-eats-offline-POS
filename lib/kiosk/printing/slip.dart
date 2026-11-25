@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:pos_cloud/pos_cloud.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
 
@@ -26,6 +27,10 @@ class SlipLabels {
     required this.without,
     required this.groupLabel,
     required this.groupNone,
+    this.mobileMoneyTitle = '',
+    this.providerMtn = '',
+    this.providerOrange = '',
+    this.holderPattern = '{name}',
   });
 
   final String header;
@@ -53,6 +58,21 @@ class SlipLabels {
   /// offered it — so printing nothing tells the counter and the kitchen the
   /// same thing in two different situations.
   final String groupNone;
+
+  /// ECOSYSTEM §25.4 — the heading over the merchant codes, short enough for
+  /// one 32-column line.
+  final String mobileMoneyTitle;
+  final String providerMtn;
+  final String providerOrange;
+
+  /// "Au nom de : {name}", placeholder intact (same rule as [without]).
+  final String holderPattern;
+
+  String providerName(String provider) => switch (provider) {
+    KioskPaymentProvider.mtnMomo => providerMtn,
+    KioskPaymentProvider.orangeMoney => providerOrange,
+    _ => provider,
+  };
 }
 
 abstract final class Slip {
@@ -68,6 +88,7 @@ abstract final class Slip {
     required SlipLabels labels,
     required CollectionCode code,
     required bool french,
+    List<KioskPaymentCode> paymentCodes = const <KioskPaymentCode>[],
   }) {
     return EscPos.build(<List<int>>[
       EscPos.initialize,
@@ -116,6 +137,15 @@ abstract final class Slip {
       EscPos.text(labels.payAtCounter),
       <int>[EscPos.lf, EscPos.lf],
       EscPos.bold(false),
+
+      /*
+       * ECOSYSTEM §25.4 — the merchant codes, on paper too (owner,
+       * 2026-11-25): the customer who walks away from the screen still has
+       * the number to dial. Absent entirely when the dashboard defines none.
+       * The payment itself happens outside the system; the cashier records
+       * the ticket as cash (owner decision, 2026-11-25).
+       */
+      ..._mobileMoney(paymentCodes, labels),
 
       EscPos.qr(code.payload),
       <int>[EscPos.lf],
@@ -220,6 +250,40 @@ abstract final class Slip {
     }
     return out;
   }
+
+  static List<List<int>> _mobileMoney(
+    List<KioskPaymentCode> codes,
+    SlipLabels labels,
+  ) {
+    if (codes.isEmpty) {
+      return const <List<int>>[];
+    }
+    return <List<int>>[
+      EscPos.align(0),
+      ..._rule(),
+      EscPos.bold(true),
+      EscPos.text(_clip(labels.mobileMoneyTitle)),
+      <int>[EscPos.lf],
+      EscPos.bold(false),
+      for (final KioskPaymentCode c in codes) ...<List<int>>[
+        // The CODE is the right-hand column, so like an amount it is never
+        // the part that gets truncated.
+        EscPos.text(_row(labels.providerName(c.provider), c.code)),
+        <int>[EscPos.lf],
+        if (c.holderName case final String name) ...<List<int>>[
+          EscPos.text(
+            _clip('  ${labels.holderPattern.replaceFirst('{name}', name)}'),
+          ),
+          <int>[EscPos.lf],
+        ],
+      ],
+      ..._rule(),
+      EscPos.align(1),
+    ];
+  }
+
+  static String _clip(String value) =>
+      value.length > columns ? value.substring(0, columns) : value;
 
   /// Left label, right amount, padded to [columns]. When the two together
   /// exceed the width the **label** is truncated, never the amount — a slip

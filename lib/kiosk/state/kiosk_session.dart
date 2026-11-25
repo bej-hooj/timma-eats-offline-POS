@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
 
+import '../branch_config/kiosk_branch_config.dart';
 import '../catalog/dish_photo_cache.dart';
 import '../printing/print_queue.dart';
 import '../printing/slip.dart';
@@ -265,6 +266,7 @@ class KioskSessionController extends Notifier<KioskSessionState> {
         labels: labels,
         code: code,
         french: french,
+        paymentCodes: ref.read(kioskBranchConfigProvider).paymentCodes,
       );
       // The order's client id IS the job id: one sale, one slip, and a reprint
       // is a deliberate separate action rather than an accident of retrying.

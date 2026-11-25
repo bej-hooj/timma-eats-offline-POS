@@ -325,6 +325,10 @@ SlipLabels _slipLabels(BuildContext context) {
     // groups, and the printer cannot come back for a second translation.
     groupLabel: l10n.kioskSlipGroupLabel('{group}', '{answer}'),
     groupNone: l10n.kioskSlipGroupNone,
+    mobileMoneyTitle: l10n.kioskSlipMobileTitle,
+    providerMtn: l10n.kioskPayMobileProviderMtn,
+    providerOrange: l10n.kioskPayMobileProviderOrange,
+    holderPattern: l10n.kioskPayMobileHolder('{name}'),
   );
 }
 

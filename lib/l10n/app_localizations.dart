@@ -697,6 +697,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Au nom de : {name}'**
   String kioskPayMobileHolder(String name);
+
+  /// No description provided for @kioskSlipMobileTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas d\'espèces ? Payez par :'**
+  String get kioskSlipMobileTitle;
 }
 
 class _AppLocalizationsDelegate

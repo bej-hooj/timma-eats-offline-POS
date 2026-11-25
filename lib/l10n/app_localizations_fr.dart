@@ -359,4 +359,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String kioskPayMobileHolder(String name) {
     return 'Au nom de : $name';
   }
+
+  @override
+  String get kioskSlipMobileTitle => 'Pas d\'espèces ? Payez par :';
 }

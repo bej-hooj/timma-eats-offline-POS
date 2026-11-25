@@ -228,5 +228,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "kioskSlipMobileTitle": "Pas d'espèces ? Payez par :"
 }
