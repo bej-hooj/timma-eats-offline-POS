@@ -1,10 +1,21 @@
 {
   "kioskCartRemoveLine": "Retirer {dish}",
-  "@kioskCartRemoveLine": {"description": "Screen-reader label for the remove key on a basket row.", "placeholders": {"dish": {"type": "String"}}},
+  "@kioskCartRemoveLine": {
+    "description": "Screen-reader label for the remove key on a basket row.",
+    "placeholders": {
+      "dish": {
+        "type": "String"
+      }
+    }
+  },
   "kioskCounterCodeLabel": "Code de votre commande",
-  "@kioskCounterCodeLabel": {"description": "Above the four-character code on the confirmation screen."},
+  "@kioskCounterCodeLabel": {
+    "description": "Above the four-character code on the confirmation screen."
+  },
   "kioskCounterNoteCode": "Notez ce code",
-  "@kioskCounterNoteCode": {"description": "Tells the customer to note the code before leaving the borne."},
+  "@kioskCounterNoteCode": {
+    "description": "Tells the customer to note the code before leaving the borne."
+  },
   "kioskAttractTitle": "Commandez ici",
   "kioskAttractSubtitle": "Touchez l'écran pour commencer",
   "kioskAttractStart": "Commencer",
@@ -186,6 +197,32 @@
   "kioskDishWithout": "Sans {name}",
   "kioskDishRemovableHint": "Touchez pour retirer",
   "@kioskDishWithout": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kioskWeekMenuTitle": "Menu de la semaine",
+  "kioskWeekMenuIntro": "Les plats et les jours où ils sont cuisinés.",
+  "kioskWeekMenuEveryDay": "Tous les jours",
+  "kioskWeekMenuNotScheduled": "Pas cette semaine",
+  "kioskWeekMenuToday": "Aujourd'hui",
+  "kioskWeekMenuClose": "Fermer",
+  "kioskPayMobileTitle": "Pas d'espèces ? Payez par Mobile Money",
+  "kioskPayMobileHint": "Composez le code marchand, puis montrez la confirmation à la caisse avec votre ticket.",
+  "kioskPayMobileProviderMtn": "MTN Mobile Money",
+  "kioskPayMobileProviderOrange": "Orange Money",
+  "kioskPayMobileCode": "Code marchand : {code}",
+  "@kioskPayMobileCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "kioskPayMobileHolder": "Au nom de : {name}",
+  "@kioskPayMobileHolder": {
     "placeholders": {
       "name": {
         "type": "String"

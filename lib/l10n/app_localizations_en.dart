@@ -312,4 +312,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kioskDishRemovableHint => 'Tap to leave out';
+
+  @override
+  String get kioskWeekMenuTitle => 'This week\'s menu';
+
+  @override
+  String get kioskWeekMenuIntro => 'Our dishes and the days they are cooked.';
+
+  @override
+  String get kioskWeekMenuEveryDay => 'Every day';
+
+  @override
+  String get kioskWeekMenuNotScheduled => 'Not this week';
+
+  @override
+  String get kioskWeekMenuToday => 'Today';
+
+  @override
+  String get kioskWeekMenuClose => 'Close';
+
+  @override
+  String get kioskPayMobileTitle => 'No cash? Pay with Mobile Money';
+
+  @override
+  String get kioskPayMobileHint =>
+      'Dial the merchant code, then show the confirmation at the counter with your ticket.';
+
+  @override
+  String get kioskPayMobileProviderMtn => 'MTN Mobile Money';
+
+  @override
+  String get kioskPayMobileProviderOrange => 'Orange Money';
+
+  @override
+  String kioskPayMobileCode(String code) {
+    return 'Merchant code: $code';
+  }
+
+  @override
+  String kioskPayMobileHolder(String name) {
+    return 'Account name: $name';
+  }
 }

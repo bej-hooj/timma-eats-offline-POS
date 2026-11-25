@@ -29,9 +29,11 @@ class KioskCloudCatalog {
     required this.sync,
     required this.store,
     required this.photos,
-    this.refreshInterval = const Duration(minutes: 15),
+    this.refreshInterval = const Duration(seconds: 60),
     bool Function()? canPin,
     this.pinNow,
+    this.config,
+    this.onRosterChanged,
   }) : canPin = canPin ?? _alwaysIdle;
 
   static bool _alwaysIdle() => true;
@@ -53,9 +55,21 @@ class KioskCloudCatalog {
   final PosStore store;
   final DishPhotoCache photos;
 
-  /// How often a running kiosk asks the dashboard whether the menu moved.
-  /// Ops edit a menu a few times a day, not a few times a minute.
+  /// How often a running kiosk asks the dashboard whether anything moved —
+  /// and, when the line was down, how soon it notices the internet is back
+  /// (ECOSYSTEM §25.6, owner: "keep checking every x time"). Cheap: an
+  /// unedited menu answers `{unchanged}` without a bundle.
   final Duration refreshInterval;
+
+  /// Merchant codes, KDS roster, day menu (ECOSYSTEM §25). Null on a tablet
+  /// with no cloud credential.
+  final BranchConfigSync? config;
+
+  /// The hub re-sends the roster to every KDS when it changes.
+  final void Function()? onRosterChanged;
+
+  /// Bumped when the merchant codes or the day menu changed.
+  final ValueNotifier<int> configRevision = ValueNotifier<int>(0);
 
   /// Whether it is safe to swap the menu **right now**.
   ///
@@ -115,8 +129,12 @@ class KioskCloudCatalog {
       return;
     }
     final int? before = store.activeSnapshot()?.version;
+    await _pullConfig();
     try {
-      await (pinNow ?? cloud!.start)();
+      // ⚠ `start()` pins only the FIRST time — it is idempotent once the
+      // loops run. Calling it on every tick (as this did) meant a running
+      // borne never saw a dashboard edit again until it was restarted.
+      await (pinNow ?? (cloud!.isStarted ? cloud.refreshMenu : cloud.start))();
       _status = KioskCatalogStatus.pinned;
     } on Object {
       // No internet, a refused key, a bundle that failed validation — all the
@@ -133,6 +151,28 @@ class KioskCloudCatalog {
     if (after != before) {
       debugPrint('[KioskCatalog] menu v$before → v$after');
       menuRevision.value++;
+    }
+  }
+
+  /// Pulled on every tick, independent of the customer: none of it re-prices
+  /// a basket, so it never has to wait for an idle borne.
+  Future<void> _pullConfig() async {
+    final BranchConfigSync? sync = config;
+    if (sync == null) {
+      return;
+    }
+    final BranchConfigPullResult result = await sync.pullOnce();
+    if (result.failures > 0) {
+      // Counts only — never an error message (it can carry a key).
+      debugPrint(
+        '[KioskCatalog] branch config: ${result.failures} pull(s) failed',
+      );
+    }
+    if (result.settingsChanged || result.dayMenuChanged) {
+      configRevision.value++;
+    }
+    if (result.rosterChanged) {
+      onRosterChanged?.call();
     }
   }
 
@@ -164,6 +204,7 @@ class KioskCloudCatalog {
     _timer = null;
     _running = false;
     menuRevision.dispose();
+    configRevision.dispose();
     await sync?.stop();
   }
 }

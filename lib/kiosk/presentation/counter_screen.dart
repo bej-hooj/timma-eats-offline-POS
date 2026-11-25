@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:pos_cloud/pos_cloud.dart';
 import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kiosk/design/money_formatter.dart';
 import 'package:timma_kiosk/l10n/app_localizations.dart';
 import '../state/kiosk_session.dart';
 import '../theme/kiosk_scale.dart';
+import 'widgets/kiosk_mobile_money_panel.dart';
 
 /// The last screen: a **large calm number** and where to take it.
 ///
@@ -27,11 +29,15 @@ class KioskCounterScreen extends StatelessWidget {
     required this.onDone,
     required this.printState,
     required this.onRetryPrint,
+    this.paymentCodes = const <KioskPaymentCode>[],
     super.key,
   });
 
   final PlacedOrder placed;
   final VoidCallback onDone;
+
+  /// ECOSYSTEM §25.4 — the dashboard's merchant codes; empty = no section.
+  final List<KioskPaymentCode> paymentCodes;
 
   /// What became of this sale's slip. The order is already durable either way;
   /// this line exists so a customer never walks to the counter believing they
@@ -75,6 +81,7 @@ class KioskCounterScreen extends StatelessWidget {
             printState: printState,
             onRetryPrint: onRetryPrint,
             onDone: onDone,
+            paymentCodes: paymentCodes,
             crossAxisAlignment: sideBySide
                 ? CrossAxisAlignment.start
                 : CrossAxisAlignment.center,
@@ -240,6 +247,7 @@ class _Details extends StatelessWidget {
     required this.printState,
     required this.onRetryPrint,
     required this.onDone,
+    required this.paymentCodes,
     required this.crossAxisAlignment,
   });
 
@@ -247,6 +255,7 @@ class _Details extends StatelessWidget {
   final KioskPrintState printState;
   final VoidCallback onRetryPrint;
   final VoidCallback onDone;
+  final List<KioskPaymentCode> paymentCodes;
   final CrossAxisAlignment crossAxisAlignment;
 
   @override
@@ -276,6 +285,17 @@ class _Details extends StatelessWidget {
             color: on.withValues(alpha: 0.85),
           ),
         ),
+        // Only while money is still owed at the counter: a ticket that is
+        // already paid must not invite a second payment.
+        if (paymentCodes.isNotEmpty &&
+            placed.order.paymentStatus == PosPaymentStatus.unpaid) ...<Widget>[
+          const SizedBox(height: KioskScale.gapMd),
+          KioskMobileMoneyPanel(
+            codes: paymentCodes,
+            foreground: on,
+            crossAxisAlignment: crossAxisAlignment,
+          ),
+        ],
         const SizedBox(height: KioskScale.gapMd),
         _SlipStatus(printState: printState, onRetryPrint: onRetryPrint),
         const SizedBox(height: KioskScale.gapMd),

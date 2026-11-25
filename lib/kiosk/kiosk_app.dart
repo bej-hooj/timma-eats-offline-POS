@@ -6,10 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:timma_kiosk/design/app_tokens.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pos_cloud/pos_cloud.dart';
 import 'package:pos_core/pos_core.dart';
+import 'package:timma_kiosk/design/time_util.dart';
 
 import 'package:timma_kiosk/l10n/app_localizations.dart';
+import 'branch_config/kiosk_branch_config.dart';
 import 'catalog/dish_photo_cache.dart';
+import 'presentation/widgets/kiosk_week_menu_sheet.dart';
 import 'motion/kiosk_fly_to_cart.dart';
 import 'presentation/widgets/kiosk_cart_panel.dart';
 import 'printing/slip.dart';
@@ -296,6 +300,7 @@ class _KioskShellState extends ConsumerState<KioskShell> {
           printState: session.printState,
           onRetryPrint: controller.retryPrint,
           onDone: controller.reset,
+          paymentCodes: ref.watch(kioskBranchConfigProvider).paymentCodes,
         );
     }
   }
@@ -355,11 +360,18 @@ class _MenuWithCartBar extends ConsumerWidget {
     final KioskCartController cartController = ref.read(
       kioskCartProvider.notifier,
     );
-    return ValueListenableBuilder<int>(
-      valueListenable: revision,
-      builder: (BuildContext context, _, Widget? _) => _body(
+    // ECOSYSTEM §25.5 — the day menu can change without the priced menu
+    // changing, so it has its own revision; either one rebuilds the screen.
+    final KioskBranchConfig config = ref.watch(kioskBranchConfigProvider);
+    final ValueListenable<int> configRevision = ref.watch(
+      kioskConfigRevisionProvider,
+    );
+    return ListenableBuilder(
+      listenable: Listenable.merge(<Listenable>[revision, configRevision]),
+      builder: (BuildContext context, Widget? _) => _body(
         context: context,
         menu: engine.pinnedMenu,
+        dayMenu: config.dayMenu,
         cart: cart,
         photos: photos,
         onToggleLanguage: onToggleLanguage,
@@ -372,6 +384,7 @@ class _MenuWithCartBar extends ConsumerWidget {
   Widget _body({
     required BuildContext context,
     required MenuSnapshot? menu,
+    required KioskDayMenu dayMenu,
     required KioskCartState cart,
     required DishPhotoCache? photos,
     required VoidCallback onToggleLanguage,
@@ -386,6 +399,14 @@ class _MenuWithCartBar extends ConsumerWidget {
     // basket stands beside the menu, the way every reference till does it; on
     // a narrow one the bar stays, because a 340 dp panel there would squeeze
     // the grid to two columns and cost more menu than it is worth.
+    // Today is a Douala calendar day, never the UTC one (migration 46).
+    // Computed only when a schedule exists: with none there is nothing to
+    // restrict (fail-open) and no reason to touch the timezone database.
+    final bool scheduled = dayMenu.publishedDates.isNotEmpty;
+    final DateTime? today = scheduled ? _doualaToday() : null;
+    final Set<String>? allowedToday = today == null
+        ? null
+        : dayMenu.allowedOn(KioskWeekMenuSheet.isoDate(today));
     final bool sideBySide = KioskCartPanel.fitsBeside(
       MediaQuery.sizeOf(context).width,
     );
@@ -397,6 +418,17 @@ class _MenuWithCartBar extends ConsumerWidget {
             onPick: onPick,
             onToggleLanguage: onToggleLanguage,
             photoCache: photos,
+            isOnToday: allowedToday == null
+                ? null
+                : (String productId) => allowedToday.contains(productId),
+            onShowWeek: today == null
+                ? null
+                : () => KioskWeekMenuSheet.show(
+                    context,
+                    menu: menu,
+                    dayMenu: dayMenu,
+                    today: today,
+                  ),
             // ⚠ The basket is written FIRST and the bubble is decoration over
             // a change that already happened. Tying the line to the end of a
             // 600 ms animation would put a lie between the tap and the truth,
@@ -448,4 +480,9 @@ class _MenuWithCartBar extends ConsumerWidget {
       ],
     );
   }
+}
+
+DateTime _doualaToday() {
+  final DateTime now = TimeUtil.nowInDouala();
+  return DateTime(now.year, now.month, now.day);
 }

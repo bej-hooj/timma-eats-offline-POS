@@ -625,6 +625,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Touchez pour retirer'**
   String get kioskDishRemovableHint;
+
+  /// No description provided for @kioskWeekMenuTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Menu de la semaine'**
+  String get kioskWeekMenuTitle;
+
+  /// No description provided for @kioskWeekMenuIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les plats et les jours où ils sont cuisinés.'**
+  String get kioskWeekMenuIntro;
+
+  /// No description provided for @kioskWeekMenuEveryDay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les jours'**
+  String get kioskWeekMenuEveryDay;
+
+  /// No description provided for @kioskWeekMenuNotScheduled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas cette semaine'**
+  String get kioskWeekMenuNotScheduled;
+
+  /// No description provided for @kioskWeekMenuToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get kioskWeekMenuToday;
+
+  /// No description provided for @kioskWeekMenuClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get kioskWeekMenuClose;
+
+  /// No description provided for @kioskPayMobileTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas d\'espèces ? Payez par Mobile Money'**
+  String get kioskPayMobileTitle;
+
+  /// No description provided for @kioskPayMobileHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Composez le code marchand, puis montrez la confirmation à la caisse avec votre ticket.'**
+  String get kioskPayMobileHint;
+
+  /// No description provided for @kioskPayMobileProviderMtn.
+  ///
+  /// In fr, this message translates to:
+  /// **'MTN Mobile Money'**
+  String get kioskPayMobileProviderMtn;
+
+  /// No description provided for @kioskPayMobileProviderOrange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Orange Money'**
+  String get kioskPayMobileProviderOrange;
+
+  /// No description provided for @kioskPayMobileCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code marchand : {code}'**
+  String kioskPayMobileCode(String code);
+
+  /// No description provided for @kioskPayMobileHolder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Au nom de : {name}'**
+  String kioskPayMobileHolder(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../branch_config/kiosk_branch_config.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -161,6 +162,8 @@ class HubController extends Notifier<HubState> {
           collectionSecret: secret,
           credentialStore: credentials,
         ),
+        // ECOSYSTEM §25.2 — read on every send, so the newest pull wins.
+        rosterSource: () => ref.read(kioskBranchConfigProvider).roster,
       );
       final HubEndpoint bound = await server.start();
       // ⚠ The server binds every interface, so it reports `0.0.0.0` — which is
@@ -348,6 +351,9 @@ class HubController extends Notifier<HubState> {
   /// Safe to call when no hub is running or no board is paired — the kiosk sells
   /// either way, and this is the notification, not the sale.
   void publishBoard() => _server?.publishBoard();
+
+  /// Re-sends the KDS access roster after the dashboard changed it.
+  void publishRoster() => _server?.publishRoster();
 
   Future<void> stop() async {
     _poll?.cancel();

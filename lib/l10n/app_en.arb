@@ -1,10 +1,21 @@
 {
   "kioskCartRemoveLine": "Remove {dish}",
-  "@kioskCartRemoveLine": {"description": "Screen-reader label for the remove key on a basket row.", "placeholders": {"dish": {"type": "String"}}},
+  "@kioskCartRemoveLine": {
+    "description": "Screen-reader label for the remove key on a basket row.",
+    "placeholders": {
+      "dish": {
+        "type": "String"
+      }
+    }
+  },
   "kioskCounterCodeLabel": "Your order code",
-  "@kioskCounterCodeLabel": {"description": "Above the four-character code on the confirmation screen."},
+  "@kioskCounterCodeLabel": {
+    "description": "Above the four-character code on the confirmation screen."
+  },
   "kioskCounterNoteCode": "Write this code down",
-  "@kioskCounterNoteCode": {"description": "Tells the customer to note the code before leaving the borne."},
+  "@kioskCounterNoteCode": {
+    "description": "Tells the customer to note the code before leaving the borne."
+  },
   "kioskAttractTitle": "Order here",
   "kioskAttractSubtitle": "Touch the screen to start",
   "kioskAttractStart": "Start",
@@ -191,5 +202,17 @@
         "type": "String"
       }
     }
-  }
+  },
+  "kioskWeekMenuTitle": "This week's menu",
+  "kioskWeekMenuIntro": "Our dishes and the days they are cooked.",
+  "kioskWeekMenuEveryDay": "Every day",
+  "kioskWeekMenuNotScheduled": "Not this week",
+  "kioskWeekMenuToday": "Today",
+  "kioskWeekMenuClose": "Close",
+  "kioskPayMobileTitle": "No cash? Pay with Mobile Money",
+  "kioskPayMobileHint": "Dial the merchant code, then show the confirmation at the counter with your ticket.",
+  "kioskPayMobileProviderMtn": "MTN Mobile Money",
+  "kioskPayMobileProviderOrange": "Orange Money",
+  "kioskPayMobileCode": "Merchant code: {code}",
+  "kioskPayMobileHolder": "Account name: {name}"
 }

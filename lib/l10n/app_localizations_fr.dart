@@ -316,4 +316,46 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get kioskDishRemovableHint => 'Touchez pour retirer';
+
+  @override
+  String get kioskWeekMenuTitle => 'Menu de la semaine';
+
+  @override
+  String get kioskWeekMenuIntro =>
+      'Les plats et les jours où ils sont cuisinés.';
+
+  @override
+  String get kioskWeekMenuEveryDay => 'Tous les jours';
+
+  @override
+  String get kioskWeekMenuNotScheduled => 'Pas cette semaine';
+
+  @override
+  String get kioskWeekMenuToday => 'Aujourd\'hui';
+
+  @override
+  String get kioskWeekMenuClose => 'Fermer';
+
+  @override
+  String get kioskPayMobileTitle => 'Pas d\'espèces ? Payez par Mobile Money';
+
+  @override
+  String get kioskPayMobileHint =>
+      'Composez le code marchand, puis montrez la confirmation à la caisse avec votre ticket.';
+
+  @override
+  String get kioskPayMobileProviderMtn => 'MTN Mobile Money';
+
+  @override
+  String get kioskPayMobileProviderOrange => 'Orange Money';
+
+  @override
+  String kioskPayMobileCode(String code) {
+    return 'Code marchand : $code';
+  }
+
+  @override
+  String kioskPayMobileHolder(String name) {
+    return 'Au nom de : $name';
+  }
 }

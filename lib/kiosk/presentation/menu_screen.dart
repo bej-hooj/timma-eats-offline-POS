@@ -100,6 +100,8 @@ class KioskMenuScreen extends StatefulWidget {
     required this.onToggleLanguage,
     this.photoCache,
     this.onQuickAdd,
+    this.isOnToday,
+    this.onShowWeek,
     super.key,
   });
 
@@ -123,6 +125,14 @@ class KioskMenuScreen extends StatefulWidget {
   /// on the menu header where a customer looks first, and it resets to French
   /// with the session because the next person is a different person.
   final VoidCallback onToggleLanguage;
+
+  /// ECOSYSTEM §25.5 — whether a dish is cooked today. A dish that is not is
+  /// neither drawn nor counted in its category tile. Null = no restriction.
+  final bool Function(String productId)? isOnToday;
+
+  /// Opens *Menu de la semaine*: every dish and the days it is cooked. Null
+  /// hides the button (nothing published to show).
+  final VoidCallback? onShowWeek;
 
   @override
   State<KioskMenuScreen> createState() => _KioskMenuScreenState();
@@ -190,7 +200,11 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
     final bool french = Localizations.localeOf(context).languageCode == 'fr';
     final String query = _fold(_search.text.trim());
     final List<SnapshotProduct> products =
-        <SnapshotProduct>[...widget.menu.products]..sort(
+        <SnapshotProduct>[
+          ...widget.menu.products.where(
+            (SnapshotProduct p) => widget.isOnToday?.call(p.productId) ?? true,
+          ),
+        ]..sort(
           (SnapshotProduct a, SnapshotProduct b) =>
               a.sortIndex.compareTo(b.sortIndex),
         );
@@ -313,6 +327,28 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
                   ),
                 ),
               ),
+              if (widget.onShowWeek
+                  case final VoidCallback showWeek) ...<Widget>[
+                const SizedBox(width: KioskScale.gapMd),
+                // Icon only: this row already fights for width on a 868 dp
+                // handset, and the calendar reads without a word. The hit
+                // area is still the full touch target.
+                SizedBox.square(
+                  dimension: KioskScale.minTarget,
+                  child: IconButton.outlined(
+                    key: const ValueKey<String>('kiosk-week-menu'),
+                    tooltip: l10n.kioskWeekMenuTitle,
+                    onPressed: showWeek,
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    style: IconButton.styleFrom(
+                      side: const BorderSide(
+                        color: AppColors.controlBorder,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(width: KioskScale.gapMd),
               // ⚠ NOT the themed `OutlinedButton`. That theme is built for the
               // menu path — a 144 dp minimum plus 40 dp of horizontal padding,
