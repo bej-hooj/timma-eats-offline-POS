@@ -33,7 +33,6 @@ class KioskCloudCatalog {
     bool Function()? canPin,
     this.pinNow,
     this.config,
-    this.onRosterChanged,
   }) : canPin = canPin ?? _alwaysIdle;
 
   static bool _alwaysIdle() => true;
@@ -61,12 +60,9 @@ class KioskCloudCatalog {
   /// unedited menu answers `{unchanged}` without a bundle.
   final Duration refreshInterval;
 
-  /// Merchant codes, KDS roster, day menu (ECOSYSTEM §25). Null on a tablet
+  /// Merchant codes and the day menu (ECOSYSTEM §25). Null on a tablet
   /// with no cloud credential.
   final BranchConfigSync? config;
-
-  /// The hub re-sends the roster to every KDS when it changes.
-  final void Function()? onRosterChanged;
 
   /// Bumped when the merchant codes or the day menu changed.
   final ValueNotifier<int> configRevision = ValueNotifier<int>(0);
@@ -170,9 +166,6 @@ class KioskCloudCatalog {
     }
     if (result.settingsChanged || result.dayMenuChanged) {
       configRevision.value++;
-    }
-    if (result.rosterChanged) {
-      onRosterChanged?.call();
     }
   }
 

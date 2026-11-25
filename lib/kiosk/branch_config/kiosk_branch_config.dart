@@ -1,15 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_cloud/pos_cloud.dart';
-import 'package:pos_core/pos_core.dart';
 
 /// The branch's operational settings as the borne's screens read them
-/// (ECOSYSTEM §25.4–§25.5): merchant codes, the KDS roster and the day menu.
+/// (ECOSYSTEM §25.4–§25.5): merchant codes and the day menu.
 ///
 /// A read-only view over [BranchConfigSync]'s cache. A borne with no cloud
 /// credential reads [KioskBranchConfig.empty]: no merchant codes (the ticket
-/// screen shows no section), no roster (every KDS stays the full board) and
-/// no day restriction (every dish shows).
+/// screen shows no section) and no day restriction (every dish shows).
 class KioskBranchConfig {
   const KioskBranchConfig._(this._sync);
 
@@ -24,10 +22,6 @@ class KioskBranchConfig {
       _sync?.paymentCodes() ?? const <KioskPaymentCode>[];
 
   KioskDayMenu get dayMenu => _sync?.dayMenu() ?? KioskDayMenu.none;
-
-  /// Null when the hub has never pulled a roster: the hub then sends none and
-  /// every KDS keeps the full board.
-  KitchenRoster? get roster => _sync?.roster();
 }
 
 final Provider<KioskBranchConfig> kioskBranchConfigProvider =

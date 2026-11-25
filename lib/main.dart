@@ -113,7 +113,6 @@ Future<void> main() async {
     identity: identity,
     photos: photos,
     canPin: () => _kioskIsIdle(container),
-    onRosterChanged: () => container.read(hubProvider.notifier).publishRoster(),
   );
 
   container = ProviderContainer(
@@ -137,7 +136,7 @@ Future<void> main() async {
       // What makes the dashboard's menu reach the screen without a restart.
       if (catalog != null)
         kioskMenuRevisionProvider.overrideWithValue(catalog.menuRevision),
-      // ECOSYSTEM §25 — merchant codes, day menu, KDS roster.
+      // ECOSYSTEM §25 — merchant codes and the day menu.
       if (catalog?.config case final BranchConfigSync config)
         kioskBranchConfigProvider.overrideWithValue(
           KioskBranchConfig.of(config),
@@ -208,7 +207,6 @@ Future<KioskCloudCatalog?> _cloudCatalog({
   required PosEngine engine,
   required PosDeviceIdentity identity,
   required DishPhotoCache? photos,
-  void Function()? onRosterChanged,
 }) async {
   if (photos == null) {
     return null;
@@ -262,7 +260,6 @@ Future<KioskCloudCatalog?> _cloudCatalog({
       gateway: gateway,
       deviceKey: deviceKey,
     ),
-    onRosterChanged: onRosterChanged,
     sync: PosCloudSync(
       store: store,
       branchId: identity.branchId,
