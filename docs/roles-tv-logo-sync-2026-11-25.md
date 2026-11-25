@@ -374,3 +374,28 @@ and drink, options, removals, totals, tender) — for accounting.
 - Owner asked: 4 dishes for today → `menu_days` 2026-11-25 = Ndolé, Poulet DG,
   Koki, Eru (published). ⚠ `menu_day_enforced` is on, so the app and the web
   also offer only these 4 today.
+
+### ✅ End-to-end online order, real devices (2026-11-25 20:11–20:13)
+TM-100154, Koki at 10 FCFA (test price, restored to 2 000 right after), pickup,
+CamPay / Orange on the owner's number, approved by the owner on his phone.
+| Step | Proof |
+|---|---|
+| Payment confirmed | app « Payment confirmed », push « Paiement reçu », DB `placed/paid` 19:11:55 UTC |
+| KDS *Nouvelles* | « Ticket A03 · 1× Koki » + alarm, Cuisine view |
+| Accepter | DB `accepted` 19:12:31 + `order_accepted` row + push « Commande acceptée » |
+| Commencer | DB `preparing` 19:12:43 (silent by design) |
+| Prêt | DB `ready` 19:12:49 + `order_ready` + push « Commande prête » |
+| App tracking | Order ticket: Placed → Accepted → Preparing → Ready ticked |
+Order left at `ready` (owner can complete it).
+
+### Fixed after the run
+- KDS: view switch floated mid-row; « Couper l'alarme » showed in Cuisine for a
+  till ticket it never rings for. Both fixed, test fails on either old code.
+
+### Open items (owner to schedule)
+1. Borne: no way to replay envelopes quarantined before a server fix.
+2. App Menu tab lists dishes that are not on today's menu (borne hides them);
+   check whether the app should hide or only refuse at checkout (§24.1).
+3. App payment screen keeps the title « Payment pending » after confirmation.
+4. App splash still reads « TIMMA Restaurant » under the new mark.
+5. TV (S6): behaviour decided; hardware to choose (recommendation: Android TV box).
