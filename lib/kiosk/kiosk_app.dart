@@ -425,14 +425,18 @@ class _MenuWithCartBar extends ConsumerWidget {
             isOnToday: allowedToday == null
                 ? null
                 : (String productId) => allowedToday.contains(productId),
-            onShowWeek: today == null
-                ? null
-                : () => KioskWeekMenuSheet.show(
-                    context,
-                    menu: menu,
-                    dayMenu: dayMenu,
-                    today: today,
-                  ),
+            // ⚠ ALWAYS offered (owner, 2026-11-25: "I see no dishes
+            // calendar view"). It used to hide when the dashboard had no
+            // published day — which is exactly when nobody could find it.
+            // With no schedule every dish simply shows every day (fail-open).
+            // Today is computed at the tap, not at build: widget tests have
+            // no timezone database.
+            onShowWeek: () => KioskWeekMenuSheet.show(
+              context,
+              menu: menu,
+              dayMenu: dayMenu,
+              today: today ?? _doualaToday(),
+            ),
             // ⚠ The basket is written FIRST and the bubble is decoration over
             // a change that already happened. Tying the line to the end of a
             // 600 ms animation would put a lie between the tap and the truth,

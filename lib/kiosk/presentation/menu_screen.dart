@@ -131,12 +131,15 @@ class KioskMenuScreen extends StatefulWidget {
   final bool Function(String productId)? isOnToday;
 
   /// Opens *Menu de la semaine*: every dish and the days it is cooked. Null
-  /// hides the button (nothing published to show).
+  /// hides the button (tests only — the app always passes one).
   final VoidCallback? onShowWeek;
 
   @override
   State<KioskMenuScreen> createState() => _KioskMenuScreenState();
 }
+
+/// Below this width the « Menu de la semaine » button is an icon only.
+const double _weekLabelMinWidth = 1100;
 
 /// A dish a customer can put in the basket without being asked anything.
 ///
@@ -330,24 +333,49 @@ class _KioskMenuScreenState extends State<KioskMenuScreen> {
               if (widget.onShowWeek
                   case final VoidCallback showWeek) ...<Widget>[
                 const SizedBox(width: KioskScale.gapMd),
-                // Icon only: this row already fights for width on a 868 dp
-                // handset, and the calendar reads without a word. The hit
-                // area is still the full touch target.
-                SizedBox.square(
-                  dimension: KioskScale.minTarget,
-                  child: IconButton.outlined(
-                    key: const ValueKey<String>('kiosk-week-menu'),
-                    tooltip: l10n.kioskWeekMenuTitle,
-                    onPressed: showWeek,
-                    icon: const Icon(Icons.calendar_month_outlined),
-                    style: IconButton.styleFrom(
-                      side: const BorderSide(
-                        color: AppColors.controlBorder,
-                        width: 2,
+                // ⚠ Labelled on a wide borne: an unlabelled calendar icon
+                // went unnoticed on the 13-inch tablet (owner, 2026-11-25).
+                // Icon only on a narrow handset, where this row already
+                // fights for width; the hit area is the full touch target.
+                if (MediaQuery.sizeOf(context).width >= _weekLabelMinWidth)
+                  SizedBox(
+                    height: KioskScale.minTarget,
+                    child: OutlinedButton.icon(
+                      key: const ValueKey<String>('kiosk-week-menu'),
+                      onPressed: showWeek,
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      label: Text(l10n.kioskWeekMenuTitle),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(
+                          KioskScale.minTarget,
+                          KioskScale.minTarget,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: KioskScale.gapMd,
+                        ),
+                        side: const BorderSide(
+                          color: AppColors.controlBorder,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox.square(
+                    dimension: KioskScale.minTarget,
+                    child: IconButton.outlined(
+                      key: const ValueKey<String>('kiosk-week-menu'),
+                      tooltip: l10n.kioskWeekMenuTitle,
+                      onPressed: showWeek,
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      style: IconButton.styleFrom(
+                        side: const BorderSide(
+                          color: AppColors.controlBorder,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
               const SizedBox(width: KioskScale.gapMd),
               // ⚠ NOT the themed `OutlinedButton`. That theme is built for the

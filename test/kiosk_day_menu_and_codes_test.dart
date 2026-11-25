@@ -92,7 +92,7 @@ void main() {
     expect(weekOpened, isTrue);
   });
 
-  testWidgets('no schedule: every dish, no week button', (
+  testWidgets('no schedule: every dish (no handler given: no button)', (
     WidgetTester tester,
   ) async {
     await borneSize(tester);
