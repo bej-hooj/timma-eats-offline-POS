@@ -1,5 +1,7 @@
 # Roles, TV display, merchant code, day menu, live sync, new logo — 2026-11-25
 
+> **Next agent: follow `IMPLEMENTATION-GUIDE-roles-tv-logo-2026-11-25.md`** (step-by-step for S5, S7, S8, S9, S6).
+
 Owner request of 2026-11-25 (whole ecosystem: app, web, cuisine, borne).
 **This file is the plan AND the results log.** A fresh session resumes from
 here alone. Canon summary: `timmaeat-webapp/ECOSYSTEM.md` §25.
@@ -102,7 +104,7 @@ Branch facts (2026-11-25):
 | S1 | Lane fix: unpaid online orders hidden (stale-ticket bound REVERTED, see log) | KDS | ✅ KDS `e219ff5` |
 | S2 | Migrations **written, not applied**: `kitchen_accounts` + roster RPC, `branch_payment_codes` + settings RPC, day-menu RPC | app | ✅ written (not validated — no local Postgres) |
 | S3 | `pos_cloud`: gateway calls + BranchConfigSync + `unchanged` fix; `pos_link`: sealed `roster` frame | app packages | ✅ `974001c` pushed |
-| S4 | Borne: merchant code on ticket screen + slip; day filter + *Menu de la semaine* | POS | ⬜ |
+| S4 | Borne: merchant code on ticket screen; day filter + *Menu de la semaine*; 60 s re-pin fix; hub roster | POS | ✅ `6561dfb` (slip printing of the code NOT done) |
 | S5 | Cuisine: login screen, role views, logout, lockout | KDS | ⬜ |
 | S6 | KDS: TV role (display screen, voice, Android TV launcher) | KDS | ⏸ **ON HOLD — owner wants to discuss the TV first (2026-11-25)** |
 | S7 | New logo: app (header + icons), web (header, favicon, PWA), borne, cuisine | all | ⬜ |
@@ -183,3 +185,12 @@ in UI strings and docs from now on.
   Roster frame is **sealed per board** (AES-256-GCM, HKDF of the board's
   pairing secret) because LAN frames are signed but readable.
   Tests: pos_core 155 · pos_cloud 72 · pos_link 93 · pos_link_flutter 21, all green.
+- **S4** — borne: `KioskCloudCatalog` re-pins with `refreshMenu()` once
+  started, every 60 s, and pulls `BranchConfigSync`; `kioskBranchConfigProvider`
+  + `kioskConfigRevisionProvider` (lib/kiosk/branch_config/); menu screen
+  `isOnToday` filter (Douala date computed only when a schedule exists — the
+  widget tests have no tz database) + calendar button → `KioskWeekMenuSheet`;
+  `KioskMobileMoneyPanel` on the ticket screen while unpaid; hub
+  `rosterSource` + `publishRoster()`. Borne 195/195 green, analyze clean.
+  Not on hardware yet (migrations not applied → the three RPCs fail and the
+  borne simply shows no codes/no restriction, by design).
