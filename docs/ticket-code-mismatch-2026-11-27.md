@@ -1,6 +1,6 @@
 # BUG (owner, 2026-11-27) — the ticket code on the borne ≠ the code on the KDS and the TVs
 
-> Status: **Fix built and tested. Borne updated on the Samsung. KDS rollout and restaurant acceptance pending.**
+> Status: **Fix built and tested. Borne updated on the Samsung. KDS release published. Restaurant acceptance pending.**
 
 Owner: « Le code du ticket affiché sur la borne et qu'on demande au client de
 noter ne correspond pas au code qui apparaît sur le KDS et la commande et donc
@@ -99,6 +99,9 @@ the app/web order view and the dashboard.
   workflow run `46033823775` succeeded. The installer and both APKs are in
   `verification-2026-11-27-ticket-code` with SHA-256 checksums and draft
   release notes.
+- KDS `1.0.5+2016` published on `cuisine-win-20261123` with owner approval.
+  Both GitHub asset hashes match the verified builds. The release notes show
+  the current version as 1.0.5 (2016).
 - Samsung: owner approved installing the production borne APK. Android
   accepted the in-place update from `1.0.0+2011` to `1.0.3+2014` and kept
   the original install timestamp. The app launched and displayed the real
