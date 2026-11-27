@@ -106,7 +106,7 @@ Branch facts (2026-11-25):
 | S3 | `pos_cloud`: gateway calls + BranchConfigSync + `unchanged` fix; `pos_link`: sealed `roster` frame | app packages | ✅ `974001c` pushed |
 | S4 | Borne: merchant code on ticket screen; day filter + *Menu de la semaine*; 60 s re-pin fix; hub roster | POS | ✅ `6561dfb` (slip printing of the code NOT done) |
 | S5 | KDS view picker « Cuisine » / « Caisse paiement » (NO login, owner) + dead roster code deleted | KDS, packages, POS | ✅ KDS `82bfb6a`, pkgs `072083e` |
-| S6 | KDS: TV surface (display screen, voice) | KDS | 📝 **PLANNED 2026-11-27 — hardware = Windows PC + LG TV over HDMI. Plan + cards: `timma-eats-offline-KDS/docs/tv-salle-windows-hdmi-2026-11-27.md`** |
+| S6 | KDS: TV surface (display screen, voice) | KDS | ✅ **BUILT 2026-11-27 (KDS `feat/tv-salle-2026-11-27`, 1.0.3+2014) — Windows PC + LG TV over HDMI; hardware proof pending. Plan + cards: `timma-eats-offline-KDS/docs/tv-salle-windows-hdmi-2026-11-27.md`** |
 | S7 | New logo: icons+wordmark (earlier), `TimmaMark` = new mark asset (app splash + borne), web favicon/touch icon/landing mark | all | ✅ app `541e88e`, POS `7a45823`, web `9aad51b` (web NOT deployed) |
 | S8 | S8a *Accès KDS* CANCELLED (no login); S8b *Codes marchands* on Settings | web | ✅ S8b `1f35a8b` (NOT deployed; needs migration 120100) |
 | S9 | Pin bump both tablets, builds, device tests, docs/memory/ECOSYSTEM | all | ⬜ |
