@@ -1,6 +1,6 @@
 # BUG (owner, 2026-11-27) — the ticket code on the borne ≠ the code on the KDS and the TVs
 
-> Status: **Fix built and tested. Rollout and on-site validation pending.**
+> Status: **Fix built and tested. Borne updated on the Samsung. KDS rollout and restaurant acceptance pending.**
 
 Owner: « Le code du ticket affiché sur la borne et qu'on demande au client de
 noter ne correspond pas au code qui apparaît sur le KDS et la commande et donc
@@ -78,7 +78,8 @@ the app/web order view and the dashboard.
   speech. The staff order list, detail and web KDS use the same formula, and
   staff can search by the printed code. Executing the staff query on Supabase
   returned a printable label for every kiosk order, different from the
-  server's daily code on all 21. Daily-code fallback is for online orders.
+  server's daily code on all 21. SQL and Dart agreed on all 1,024 sequence
+  slots and four fallback cases. Daily-code fallback is for online orders.
 - Both tablet pubspecs and lockfiles pin all four shared packages to
   `a9b185ab7f2768b06ab3b482303270c4d2e74838`.
 
@@ -95,7 +96,16 @@ the app/web order view and the dashboard.
   gives a test harness failure. `pos_cloud` passed 74 tests and `pos_link` 91.
 - Borne APK `1.0.3+2014` and KDS APK `1.0.5+2016` verified against the
   previously published Android signing certificate. Windows installer
-  workflow run `46033823775` builds the KDS branch.
+  workflow run `46033823775` succeeded. The installer and both APKs are in
+  `verification-2026-11-27-ticket-code` with SHA-256 checksums and draft
+  release notes.
+- Samsung: owner approved installing the production borne APK. Android
+  accepted the in-place update from `1.0.0+2011` to `1.0.3+2014` and kept
+  the original install timestamp. The app launched and displayed the real
+  menu of the day. No production test sale was created.
+- Dashboard commit `629eb47`: 82 targeted tests passed and Pint passed.
+  The full PHP suite has the same nine homepage and link failures reproduced
+  on the previous commit. No new full-suite failures were found.
 - The current borne release is public and its existing APK includes the
   device credential. The new production APK is kept local pending a private
   delivery channel. Publication, staff web rollout and any credential change
