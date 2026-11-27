@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pos_cloud/pos_cloud.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
 import 'package:timma_kiosk/kiosk/kiosk_app.dart';
@@ -150,6 +151,51 @@ void main() {
     final List<PosOrder> orders = store.allOrders();
     expect(orders, hasLength(1), reason: 'one sale, committed durably');
     expect(printer.sent, hasLength(1), reason: 'one slip, printed once');
+
+    final String label = orders.single.ticketLabelOrNull!;
+    expect(find.text(label), findsOneWidget);
+    expect(_contains(printer.sent.single, EscPos.text(label)), isTrue);
+
+    final PosOrder sale = orders.single;
+    final PosStore mirror = SqlitePosStore.inMemory();
+    addTearDown(mirror.close);
+    final PosEngine kds = PosEngine(
+      store: mirror,
+      identity: const PosDeviceIdentity(
+        deviceId: 'kds-test',
+        branchId: 'branch-1',
+        role: PosDeviceRole.kds,
+        label: 'Cuisine',
+      ),
+    );
+
+    void expectBoardLabel() {
+      final BoardSnapshot snapshot = BoardSnapshot.fromStore(
+        store: store,
+        clock: const SystemClock(),
+      );
+      BoardSnapshot.fromWire(snapshot.toWire()).applyTo(kds);
+      expect(mirror.findOrder(sale.clientId)!.boardLabelOrNull, label);
+    }
+
+    expectBoardLabel(); // Offline, before the server has seen the sale.
+    final CloudOrder echo = const CloudOrderMapper().mapRow(<String, Object?>{
+      PosFeedKeys.clientId: sale.clientId,
+      PosFeedKeys.orderId: 'server-order',
+      PosFeedKeys.source: PosOrderSource.kiosk,
+      PosFeedKeys.status: PosOrderStatus.placed,
+      PosFeedKeys.paymentStatus: PosPaymentStatus.paid,
+      PosFeedKeys.dailyCode: 'A99',
+    }, branchId: sale.branchId);
+    engine.mergeRemoteOrder(echo.order, echo.lines);
+    expect(
+      mirror.findOrder(sale.clientId)!.status,
+      PosOrderStatus.pendingPayment,
+    );
+    expectBoardLabel(); // After reconnect, with a different server daily code.
+    expect(mirror.findOrder(sale.clientId)!.dailyCode, 'A99');
+    expect(mirror.findOrder(sale.clientId)!.status, PosOrderStatus.placed);
+    expect(find.text(label), findsOneWidget);
 
     // The QR on the paper must be the authenticated code for THIS order under
     // the branch secret — not the ticket number, and not a code the kitchen

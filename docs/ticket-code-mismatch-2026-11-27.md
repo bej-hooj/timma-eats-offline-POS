@@ -1,6 +1,6 @@
 # BUG (owner, 2026-11-27) — the ticket code on the borne ≠ the code on the KDS and the TVs
 
-> Status: **OPEN — investigation started, nothing fixed.**
+> Status: **Fix built and tested. Rollout and on-site validation pending.**
 
 Owner: « Le code du ticket affiché sur la borne et qu'on demande au client de
 noter ne correspond pas au code qui apparaît sur le KDS et la commande et donc
@@ -51,3 +51,58 @@ the app/web order view and the dashboard.
   equals the borne label for the same order; TV label equals KDS label.
 - Then rebuild borne APK (version > 1.0.2+2013) and KDS 1.0.5+2016 (APK +
   Windows Setup via CI) — publishing needs the owner's yes.
+
+
+## Results — 2026-11-27
+
+### Cause and repair
+
+- The connected Samsung reports borne `1.0.0+2011` and KDS `1.0.3+2014`.
+  The borne's original package pin `6b1de23` sends `ticket_number` but omits
+  `station_code`. Its local screen and slip already format the four-character
+  label. The published borne `1.0.2+2013` and KDS `1.0.4+2015` include the
+  corrected wire contract from `151adba`. The hub builds the snapshot from its
+  SQLite orders. The decoder preserves both fields.
+- Supabase SELECT-only verification found both columns populated for all 21
+  kiosk orders. The live `rpc_place_kiosk_order` inserts both and the live
+  `rpc_order_feed` selects both with `client_id`. The cloud mapper reads them.
+  No migration is required.
+- The old merge preserved fields already present. It also discarded missing
+  ticket fields supplied by a later snapshot, even when their absence caused a
+  bare sequence or a fallback code. A regression test first reproduced this
+  with an unchanged status and payment. The repair fills missing fields on a
+  kiosk mirror, preserves known values and the age clock, and leaves the
+  locally issued ticket code immutable.
+- Borne, KDS and both TVs use the same printed label. The tablet and kitchen
+  TV use the same card. The dining-room TV also uses the shared label for
+  speech. The staff order list, detail and web KDS use the same formula, and
+  staff can search by the printed code. Executing the staff query on Supabase
+  returned a printable label for every kiosk order, different from the
+  server's daily code on all 21. Daily-code fallback is for online orders.
+- Both tablet pubspecs and lockfiles pin all four shared packages to
+  `a9b185ab7f2768b06ab3b482303270c4d2e74838`.
+
+### Verification and rollout
+
+- Same sale test covers the borne screen, printed ESC/POS bytes and the LAN
+  mirror before a cloud echo and after it advances the order with a different
+  daily code and missing ticket fields. The KDS suite also checks a real
+  paired LAN connection and the label in both TV surfaces.
+- Flutter gates passed on the schema-owner app (880 tests), borne (202), and
+  KDS (173), with zero analyzer issues. The `pos_core` suite passed all 156
+  tests with `dart test`. Its four process durability tests require the Dart
+  executable, so invoking the standalone Dart package suite via `flutter test`
+  gives a test harness failure. `pos_cloud` passed 74 tests and `pos_link` 91.
+- Borne APK `1.0.3+2014` and KDS APK `1.0.5+2016` verified against the
+  previously published Android signing certificate. Windows installer
+  workflow run `46033823775` builds the KDS branch.
+- The current borne release is public and its existing APK includes the
+  device credential. The new production APK is kept local pending a private
+  delivery channel. Publication, staff web rollout and any credential change
+  need explicit owner approval.
+- On-site acceptance: update both apps in place. With the store LAN connected
+  and internet disconnected, place one new borne order. Compare the screen
+  and slip with the till card. Settle it and compare the KDS card and both TVs
+  while it is preparing and ready. Restore internet, let the same order sync,
+  then compare the staff order detail and search result with the original
+  slip. The order must keep its code throughout the test.
